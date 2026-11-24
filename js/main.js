@@ -1,3 +1,5 @@
+import { pairedValues, correlation, correlationMatrix } from "./correlation.js";
+
 import { detectPeaks, peakIntervals } from "./peaks.js";
 
 import {
@@ -53,6 +55,15 @@ let peakContext = null;
 
 // 項目別の閾値入力欄
 const peakThresholdInputs = new Map();
+
+// 相関分析時のデータセット情報
+let correlationContext = null;
+
+// 実行済みの相関分析結果
+let correlationResult = null;
+
+// 相関行列の最大項目数
+const correlationColumnLimit = 40;
 
 /* ========================================
    共通処理
@@ -1491,6 +1502,563 @@ function runPeakDetection() {
   }
 }
 
+/* ========================================
+   相関分析
+======================================== */
+
+// 古い分析結果を消去する
+function clearCorrelation(message = "相関分析を実行してください。") {
+  correlationResult = null;
+
+  const table = $("correlation-table");
+
+  table.tHead.replaceChildren();
+  table.tBodies[0].replaceChildren();
+
+  $("scatter-area").textContent = "散布図の表示領域";
+
+  $("scatter-info").textContent = "相関分析を実行してください。";
+
+  $("correlation-info").textContent = message;
+}
+
+// 分析対象の変更を確認する
+function refreshCorrelationControls() {
+  const dataset = current();
+
+  const names = dataset ? [...selections.get(dataset.id)] : [];
+
+  const canAnalyze =
+    names.length >= 2 && names.length <= correlationColumnLimit;
+
+  $("correlation-settings").disabled = !canAnalyze;
+
+  $("scatter-settings").disabled = !canAnalyze;
+
+  $("apply-correlation").disabled = !canAnalyze;
+
+  const signature = JSON.stringify(names);
+
+  // データセット・横軸・対象項目が同じなら維持
+  if (
+    correlationContext &&
+    correlationContext.id === dataset?.id &&
+    correlationContext.axis === dataset?.axis &&
+    correlationContext.signature === signature
+  ) {
+    return;
+  }
+
+  correlationContext = {
+    id: dataset?.id,
+    axis: dataset?.axis,
+    signature,
+  };
+
+  // 散布図の選択肢を更新
+  for (const id of ["scatter-x", "scatter-y"]) {
+    const select = $(id);
+
+    const previous = select.value;
+
+    select.replaceChildren(...names.map((name) => option(name, name)));
+
+    if (names.includes(previous)) {
+      select.value = previous;
+    } else if (id === "scatter-y" && names.length >= 2) {
+      select.value = names.find((name) => name !== $("scatter-x").value);
+    }
+  }
+
+  if (!dataset) {
+    clearCorrelation("データを読み込んでください。");
+  } else if (names.length < 2) {
+    clearCorrelation("2項目以上を選択してください。");
+  } else if (names.length > correlationColumnLimit) {
+    clearCorrelation(
+      `相関分析は最大${correlationColumnLimit}項目です。` +
+        "表示項目を減らしてください。",
+    );
+  } else {
+    clearCorrelation(`${names.length} 項目を分析できます。`);
+  }
+}
+
+/* ========================================
+   ヒートマップ
+======================================== */
+
+// 相関係数から表示色を生成する
+function correlationColor(r) {
+  if (r === null) {
+    return {
+      background: "#3b4654",
+      text: "#e7edf5",
+    };
+  }
+
+  const strength = Math.abs(r);
+
+  const neutral = [235, 239, 245];
+
+  const target = r >= 0 ? [38, 101, 166] : [155, 53, 35];
+
+  const rgb = neutral.map((v, i) => Math.round(v + (target[i] - v) * strength));
+
+  return {
+    background: `rgb(${rgb.join(",")})`,
+    text: strength >= 0.75 ? "#ffffff" : "#111821",
+  };
+}
+
+// 相関行列をテーブルとして表示する
+function renderCorrelationMatrix(result) {
+  const table = $("correlation-table");
+
+  table.tHead.replaceChildren();
+
+  const body = table.tBodies[0];
+
+  body.replaceChildren();
+
+  // 列名を表示する
+  const header = table.tHead.insertRow();
+
+  const corner = document.createElement("th");
+
+  corner.textContent = "項目";
+
+  header.append(corner);
+
+  for (const name of result.names) {
+    const th = document.createElement("th");
+
+    th.scope = "col";
+
+    th.textContent = name;
+
+    header.append(th);
+  }
+
+  // 相関係数の行列を生成する
+  for (let i = 0; i < result.names.length; i++) {
+    const row = body.insertRow();
+
+    const th = document.createElement("th");
+
+    th.scope = "row";
+
+    th.textContent = result.names[i];
+
+    row.append(th);
+
+    for (let j = 0; j < result.names.length; j++) {
+      const value = result.matrix[i][j];
+
+      const cell = row.insertCell();
+
+      const color = correlationColor(value.r);
+
+      cell.style.backgroundColor = color.background;
+
+      cell.style.color = color.text;
+
+      cell.textContent = value.r === null ? "—" : value.r.toFixed(3);
+
+      // 有効データ数も表示する
+      const count = document.createElement("span");
+
+      count.className = "correlation-count";
+
+      count.textContent = `n=${value.validCount}`;
+
+      cell.append(count);
+
+      cell.title =
+        `${result.names[i]} × ${result.names[j]}\n` +
+        `相関係数：${formatStatistic(value.r)}\n` +
+        `有効数：${value.validCount}\n` +
+        `除外数：${value.excludedCount}`;
+    }
+  }
+}
+
+/* ========================================
+   散布図
+======================================== */
+
+// SVG要素を生成する補助関数
+function scatterElement(tag, attributes, text) {
+  const element = document.createElementNS("http://www.w3.org/2000/svg", tag);
+
+  for (const [name, value] of Object.entries(attributes)) {
+    element.setAttribute(name, String(value));
+  }
+
+  if (text !== undefined) {
+    element.textContent = text;
+  }
+
+  return element;
+}
+
+// データの最小値・最大値を取得
+function scatterBounds(values) {
+  let min = Infinity;
+  let max = -Infinity;
+
+  for (const v of values) {
+    min = Math.min(min, v);
+    max = Math.max(max, v);
+  }
+
+  return [min, max];
+}
+
+// データ座標を0～1に変換する
+function scatterFraction(value, min, max) {
+  // 定数の場合は中央に表示
+  if (min === max) return 0.5;
+
+  const width = max - min;
+
+  if (Number.isFinite(width)) {
+    return (value - min) / width;
+  }
+
+  const scale = Math.max(Math.abs(min), Math.abs(max));
+
+  return (value / scale - min / scale) / (max / scale - min / scale);
+}
+
+// 散布図を描画する
+function renderScatter() {
+  const area = $("scatter-area");
+
+  area.replaceChildren();
+
+  if (!correlationResult) {
+    area.textContent = "相関分析を実行してください。";
+
+    return;
+  }
+
+  const { columns, method, result } = correlationResult;
+
+  const xName = $("scatter-x").value;
+  const yName = $("scatter-y").value;
+
+  const xi = result.names.indexOf(xName);
+  const yi = result.names.indexOf(yName);
+
+  if (xi < 0 || yi < 0) return;
+
+  const { x, y, validCount } = pairedValues(
+    columns[xi].values,
+    columns[yi].values,
+  );
+
+  const r = result.matrix[xi][yi].r;
+
+  const methodLabel = method === "pearson" ? "Pearson" : "Spearman";
+
+  $("scatter-info").textContent =
+    `${xName} × ${yName} / ` +
+    `${methodLabel}: ${formatStatistic(r)} / ` +
+    `有効データ数: ${validCount}`;
+
+  if (!validCount) {
+    area.textContent = "有効なデータの組がありません。";
+
+    return;
+  }
+
+  // SVGの表示範囲
+  const width = 720;
+  const height = 380;
+
+  const left = 100;
+  const right = 650;
+
+  const top = 20;
+  const bottom = 315;
+
+  const [xmin, xmax] = scatterBounds(x);
+  const [ymin, ymax] = scatterBounds(y);
+
+  const px = (v) => left + scatterFraction(v, xmin, xmax) * (right - left);
+
+  const py = (v) => bottom - scatterFraction(v, ymin, ymax) * (bottom - top);
+
+  const svg = scatterElement("svg", {
+    viewBox: `0 0 ${width} ${height}`,
+
+    role: "img",
+
+    "aria-label": `${xName}と${yName}の散布図`,
+  });
+
+  // グリッド線
+  for (let i = 0; i <= 5; i++) {
+    const f = i / 5;
+
+    const gx = left + f * (right - left);
+
+    const gy = bottom - f * (bottom - top);
+
+    svg.append(
+      scatterElement("line", {
+        x1: gx,
+        x2: gx,
+        y1: top,
+        y2: bottom,
+        stroke: "#354559",
+      }),
+
+      scatterElement("line", {
+        x1: left,
+        x2: right,
+        y1: gy,
+        y2: gy,
+        stroke: "#354559",
+      }),
+    );
+
+    // 目盛り（線形補間）
+    const xv = xmin * (1 - f) + xmax * f;
+
+    const yv = ymin * (1 - f) + ymax * f;
+
+    if (xmin !== xmax) {
+      svg.append(
+        scatterElement(
+          "text",
+          {
+            x: gx,
+            y: bottom + 20,
+            fill: "#aab9ca",
+            "font-size": 12,
+            "text-anchor": "middle",
+          },
+          formatStatistic(xv),
+        ),
+      );
+    }
+
+    if (ymin !== ymax) {
+      svg.append(
+        scatterElement(
+          "text",
+          {
+            x: left - 8,
+            y: gy + 4,
+            fill: "#aab9ca",
+            "font-size": 12,
+            "text-anchor": "end",
+          },
+          formatStatistic(yv),
+        ),
+      );
+    }
+  }
+
+  // 定数データの場合の目盛り
+  if (xmin === xmax) {
+    svg.append(
+      scatterElement(
+        "text",
+        {
+          x: (left + right) / 2,
+          y: bottom + 20,
+          fill: "#aab9ca",
+          "font-size": 12,
+          "text-anchor": "middle",
+        },
+        formatStatistic(xmin),
+      ),
+    );
+  }
+
+  if (ymin === ymax) {
+    svg.append(
+      scatterElement(
+        "text",
+        {
+          x: left - 8,
+          y: (top + bottom) / 2,
+          fill: "#aab9ca",
+          "font-size": 12,
+          "text-anchor": "end",
+        },
+        formatStatistic(ymin),
+      ),
+    );
+  }
+
+  // 軸の描画
+  svg.append(
+    scatterElement("path", {
+      d: `M${left} ${top} V${bottom} H${right}`,
+      stroke: "#aab9ca",
+      fill: "none",
+    }),
+  );
+
+  // 軸名
+  svg.append(
+    scatterElement(
+      "text",
+      {
+        x: (left + right) / 2,
+
+        y: height - 8,
+
+        fill: "#e7edf5",
+
+        "font-size": 14,
+
+        "text-anchor": "middle",
+      },
+      xName,
+    ),
+
+    scatterElement(
+      "text",
+      {
+        x: 16,
+
+        y: (top + bottom) / 2,
+
+        transform: `rotate(-90 16 ${(top + bottom) / 2})`,
+
+        fill: "#e7edf5",
+
+        "font-size": 14,
+
+        "text-anchor": "middle",
+      },
+      yName,
+    ),
+  );
+
+  // 大量のSVG要素の生成を防止する
+  const displayLimit = 2000;
+
+  const displayed = Math.min(validCount, displayLimit);
+
+  // データ全体から等間隔に抽出して描画
+  for (let j = 0; j < displayed; j++) {
+    const i =
+      displayed === 1
+        ? 0
+        : Math.floor((j * (validCount - 1)) / (displayed - 1));
+
+    svg.append(
+      scatterElement("circle", {
+        cx: px(x[i]),
+
+        cy: py(y[i]),
+
+        r: 2.6,
+
+        fill: "#88baf0",
+
+        opacity: 0.6,
+      }),
+    );
+  }
+
+  area.append(svg);
+
+  if (validCount > displayLimit) {
+    $("scatter-info").textContent +=
+      ` / 描画点数: ${displayLimit}` + "（相関係数は全有効データから算出）";
+  }
+}
+
+/* ========================================
+   相関分析の実行
+======================================== */
+
+function runCorrelation() {
+  const dataset = current();
+
+  if (!dataset) return;
+
+  const names = [...selections.get(dataset.id)];
+
+  clearCorrelation();
+
+  try {
+    if (names.length < 2) {
+      throw new Error("2項目以上を選択してください。");
+    }
+
+    if (names.length > correlationColumnLimit) {
+      throw new Error(`最大${correlationColumnLimit}項目までです。`);
+    }
+
+    const method = $("correlation-method").value;
+
+    const scope = $("correlation-scope").value;
+
+    let start = 0;
+
+    let end = dataset.rowCount;
+
+    // 分析範囲を取得する
+    if (scope === "visible") {
+      [start, end] = rangeIndices(
+        dataset.axis.values,
+
+        chart.view[0],
+
+        chart.view[1],
+      );
+    }
+
+    // 選択した数値列を取得する
+    const columns = names.map((name) => ({
+      name,
+
+      values: manager.getColumn(dataset.id, name).values.slice(start, end),
+    }));
+
+    // 相関行列を算出する
+    const result = correlationMatrix(columns, method);
+
+    // 分析結果を保存する
+    correlationResult = {
+      columns,
+      method,
+      result,
+    };
+
+    // ヒートマップと散布図を表示する
+    renderCorrelationMatrix(result);
+
+    renderScatter();
+
+    const rangeLabel =
+      scope === "all"
+        ? "全区間"
+        : `${formatStatistic(chart.view[0])}` +
+          ` ～ ${formatStatistic(chart.view[1])}`;
+
+    $("correlation-info").textContent =
+      `${names.length} 項目 / ` +
+      `対象 ${end - start} サンプル / ` +
+      `分析範囲：${rangeLabel} / ` +
+      `横軸：${dataset.axis.label}`;
+
+    status("相関分析が完了しました。");
+  } catch (error) {
+    clearCorrelation(error.message);
+
+    status(error.message, true);
+  }
+}
+
 /**
  * 選択された項目のグラフを表示する
  */
@@ -1531,6 +2099,8 @@ function renderSelection() {
   refreshTransformControls();
 
   refreshPeakControls();
+
+  refreshCorrelationControls();
 }
 
 /* ========================================
@@ -2054,5 +2624,24 @@ $("clear-peaks").addEventListener(
     clearPeakResults("検出結果を消去しました。");
   },
 );
+
+/* ========================================
+   相関分析の操作イベント
+======================================== */
+
+// 相関分析を実行
+$("apply-correlation").addEventListener("click", runCorrelation);
+
+// 分析条件が変更された場合
+for (const id of ["correlation-method", "correlation-scope"]) {
+  $(id).addEventListener("change", () =>
+    clearCorrelation("分析条件が変更されました。再分析してください。"),
+  );
+}
+
+// 散布図の対象項目を変更
+for (const id of ["scatter-x", "scatter-y"]) {
+  $(id).addEventListener("change", renderScatter);
+}
 
 render();

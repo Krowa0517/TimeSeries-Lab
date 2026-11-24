@@ -859,3 +859,100 @@ footer {
     gap: 4px;
   }
 }
+
+/* ========================================
+   相関分析
+======================================== */
+
+.correlation-scroll {
+  max-height: 500px;
+}
+
+#correlation-table {
+  width: max-content;
+  min-width: 100%;
+  font-size: 12px;
+}
+
+#correlation-table th {
+  max-width: 180px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+#correlation-table td {
+  min-width: 82px;
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 有効データ数 */
+.correlation-count {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* 行名を固定する */
+#correlation-table tbody th {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--panel);
+}
+
+/* 列名を固定する */
+#correlation-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--control);
+}
+
+#correlation-table thead th:first-child {
+  left: 0;
+  z-index: 3;
+}
+
+/* ヒートマップの凡例 */
+.correlation-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.correlation-gradient {
+  flex: 1;
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(
+    to right,
+    rgb(155, 53, 35),
+    rgb(235, 239, 245),
+    rgb(38, 101, 166)
+  );
+}
+
+/* 散布図 */
+.scatter-area {
+  min-width: 0;
+  min-height: 200px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.scatter-area svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}

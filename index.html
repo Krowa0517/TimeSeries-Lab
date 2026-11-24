@@ -189,6 +189,99 @@
           </div>
         </section>
 
+        <!-- 相関分析 -->
+        <section class="panel">
+          <h2>相関分析</h2>
+
+          <fieldset id="correlation-settings" disabled>
+            <div class="analysis-controls">
+              <div class="analysis-field">
+                <label for="correlation-method"> 相関係数の種類 </label>
+
+                <select id="correlation-method">
+                  <option value="pearson">Pearson相関係数</option>
+
+                  <option value="spearman">Spearman順位相関係数</option>
+                </select>
+              </div>
+
+              <div class="analysis-field">
+                <label for="correlation-scope"> 分析範囲 </label>
+
+                <select id="correlation-scope">
+                  <option value="all">全区間</option>
+
+                  <option value="visible">グラフの表示区間</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="apply-correlation" type="button">相関分析を実行</button>
+          </fieldset>
+
+          <p id="correlation-info" class="analysis-note">
+            データを読み込んでください。
+          </p>
+
+          <!-- 相関行列 -->
+          <h3 class="peak-heading">相関行列</h3>
+
+          <div class="correlation-legend">
+            <span>−1</span>
+
+            <div class="correlation-gradient"></div>
+
+            <span>+1</span>
+          </div>
+
+          <p class="analysis-note">
+            赤：負の相関 ／ 青：正の相関 ／ 灰色：算出不能
+          </p>
+
+          <div
+            class="table-scroll correlation-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="相関行列"
+          >
+            <table id="correlation-table">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- 散布図 -->
+          <h3 class="peak-heading">散布図</h3>
+
+          <fieldset id="scatter-settings" disabled>
+            <div class="analysis-controls">
+              <div class="analysis-field">
+                <label for="scatter-x"> 横軸の項目 </label>
+
+                <select id="scatter-x"></select>
+              </div>
+
+              <div class="analysis-field">
+                <label for="scatter-y"> 縦軸の項目 </label>
+
+                <select id="scatter-y"></select>
+              </div>
+            </div>
+          </fieldset>
+
+          <p id="scatter-info" class="analysis-note">
+            相関分析を実行してください。
+          </p>
+
+          <div id="scatter-area" class="scatter-area">散布図の表示領域</div>
+
+          <p class="analysis-note">
+            相関係数は元の数値を用いて計算します。
+            欠損値を含む組は除外されます。 相関関係は因果関係を意味しません。
+            分析結果は実行時の範囲に基づきます。
+          </p>
+        </section>
+
         <!-- ピーク検出 -->
         <section class="panel">
           <h2>ピーク検出</h2>
