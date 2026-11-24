@@ -1,10 +1,8 @@
-
 /* ========================================
    基本設定・テーマ
 ======================================== */
 
 :root {
-
   color-scheme: dark;
 
   --bg: #111821;
@@ -18,20 +16,14 @@
   --accent: #88baf0;
   --error: #ffb3b3;
 
-  font-family:
-    system-ui,
-    "Yu Gothic UI",
-    sans-serif;
+  font-family: system-ui, "Yu Gothic UI", sans-serif;
 }
-
 
 * {
   box-sizing: border-box;
 }
 
-
 body {
-
   margin: 0;
 
   background: var(--bg);
@@ -41,32 +33,26 @@ body {
   line-height: 1.6;
 }
 
-
 h1,
 h2,
 p {
   margin: 0;
 }
 
-
 h1 {
   font-size: 25px;
 }
-
 
 h2 {
   font-size: 16px;
   margin-bottom: 12px;
 }
 
-
-
 /* ========================================
    ヘッダー
 ======================================== */
 
 .app-header {
-
   display: flex;
 
   align-items: center;
@@ -79,29 +65,23 @@ h2 {
   border-bottom: 1px solid var(--border);
 }
 
-
 .app-header p,
 .version,
 .muted,
 footer {
-
   color: var(--muted);
 
   font-size: 12px;
 }
-
-
 
 /* ========================================
    メインレイアウト
 ======================================== */
 
 .workspace {
-
   display: grid;
 
-  grid-template-columns:
-    300px minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
 
   gap: 20px;
 
@@ -114,10 +94,8 @@ footer {
   align-items: start;
 }
 
-
 .sidebar,
 .content {
-
   display: grid;
 
   gap: 16px;
@@ -125,10 +103,8 @@ footer {
   min-width: 0;
 }
 
-
 .panel,
 .metric {
-
   min-width: 0;
 
   background: var(--panel);
@@ -140,14 +116,11 @@ footer {
   padding: 16px;
 }
 
-
-
 /* ========================================
    入力フォーム・ボタン
 ======================================== */
 
 .sidebar label {
-
   display: block;
 
   margin: 10px 0 4px;
@@ -155,18 +128,14 @@ footer {
   color: var(--muted);
 }
 
-
 button,
 select,
 input {
-
   font: inherit;
 }
 
-
 button,
 select {
-
   border-radius: 6px;
 
   border: 1px solid var(--border);
@@ -176,17 +145,13 @@ select {
   width: 100%;
 }
 
-
 select {
-
   background: var(--control);
 
   color: var(--text);
 }
 
-
 button {
-
   background: var(--accent);
 
   color: #112235;
@@ -198,40 +163,30 @@ button {
   margin-top: 10px;
 }
 
-
 button.secondary {
-
   background: var(--control);
 
   color: var(--text);
 }
 
-
 button:hover:not(:disabled) {
-
   filter: brightness(1.12);
 }
 
-
 button:disabled,
 select:disabled {
-
   opacity: 0.5;
 
   cursor: not-allowed;
 }
 
-
 :focus-visible {
-
   outline: 2px solid var(--accent);
 
   outline-offset: 3px;
 }
 
-
 #file-input {
-
   width: 100%;
 
   max-width: 100%;
@@ -241,9 +196,7 @@ select:disabled {
   font-size: 12px;
 }
 
-
 #file-input::file-selector-button {
-
   background: var(--control);
 
   color: var(--text);
@@ -257,9 +210,7 @@ select:disabled {
   cursor: pointer;
 }
 
-
 fieldset {
-
   padding: 0;
 
   margin: 0;
@@ -269,28 +220,21 @@ fieldset {
   min-width: 0;
 }
 
-
 #axis-summary {
-
   margin-top: 10px;
 }
 
-
 .button-row {
-
   display: flex;
 
   gap: 8px;
 }
-
-
 
 /* ========================================
    表示項目一覧
 ======================================== */
 
 .column-list {
-
   max-height: 320px;
 
   overflow: auto;
@@ -298,9 +242,7 @@ fieldset {
   margin-top: 8px;
 }
 
-
 .column-list label {
-
   display: flex;
 
   align-items: flex-start;
@@ -316,9 +258,7 @@ fieldset {
   overflow-wrap: anywhere;
 }
 
-
 .column-list input {
-
   accent-color: var(--accent);
 
   flex-shrink: 0;
@@ -326,14 +266,11 @@ fieldset {
   margin-top: 5px;
 }
 
-
-
 /* ========================================
    状態表示
 ======================================== */
 
 .status {
-
   padding: 10px 14px;
 
   border: 1px solid var(--border);
@@ -345,41 +282,31 @@ fieldset {
   white-space: pre-wrap;
 }
 
-
 .status.error {
-
   color: var(--error);
 
   border-color: #ab6666;
 }
-
-
 
 /* ========================================
    データ概要
 ======================================== */
 
 .metrics {
-
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 12px;
 }
 
-
 .metric span {
-
   color: var(--muted);
 
   font-size: 12px;
 }
 
-
 .metric strong {
-
   display: block;
 
   font-size: clamp(18px, 3vw, 28px);
@@ -389,9 +316,7 @@ fieldset {
   overflow-wrap: anywhere;
 }
 
-
 .section-heading {
-
   display: flex;
 
   justify-content: space-between;
@@ -403,14 +328,11 @@ fieldset {
   flex-wrap: wrap;
 }
 
-
-
 /* ========================================
    グラフ描画領域
 ======================================== */
 
 .chart-area {
-
   min-height: 320px;
 
   display: grid;
@@ -432,22 +354,17 @@ fieldset {
   overflow-wrap: anywhere;
 }
 
-
-
 /* ========================================
    データプレビュー
 ======================================== */
 
 .table-scroll {
-
   overflow: auto;
 
   max-height: 360px;
 }
 
-
 table {
-
   border-collapse: collapse;
 
   width: 100%;
@@ -455,10 +372,8 @@ table {
   font-variant-numeric: tabular-nums;
 }
 
-
 th,
 td {
-
   text-align: left;
 
   border-bottom: 1px solid var(--border);
@@ -468,9 +383,7 @@ td {
   white-space: nowrap;
 }
 
-
 th {
-
   background: var(--control);
 
   position: sticky;
@@ -478,75 +391,55 @@ th {
   top: 0;
 }
 
-
 td.number {
-
   text-align: right;
 }
 
-
 td.missing {
-
   color: var(--muted);
 }
-
-
 
 /* ========================================
    フッター
 ======================================== */
 
 footer {
-
   text-align: center;
 
   padding: 20px;
 }
-
-
 
 /* ========================================
    レスポンシブデザイン
 ======================================== */
 
 @media (max-width: 780px) {
-
   .workspace {
-
     grid-template-columns: 1fr;
 
     padding: 12px;
   }
 
-
   .app-header {
-
     padding: 15px;
   }
 
-
   .chart-area {
-
     min-height: 220px;
   }
 }
 
-
 @media (max-width: 420px) {
-
   .metrics {
-
     grid-template-columns: 1fr;
   }
 }
-
 
 /* ========================================
    グラフ操作パネル
 ======================================== */
 
 .chart-toolbar {
-
   display: flex;
 
   align-items: flex-end;
@@ -558,17 +451,13 @@ footer {
   margin-bottom: 12px;
 }
 
-
 .chart-control {
-
   flex: 1;
 
   min-width: 140px;
 }
 
-
 .chart-control label {
-
   display: block;
 
   color: var(--muted);
@@ -578,17 +467,13 @@ footer {
   margin-bottom: 4px;
 }
 
-
 .chart-toolbar button {
-
   width: auto;
 
   margin: 0;
 }
 
-
 .chart-help {
-
   color: var(--muted);
 
   font-size: 12px;
@@ -596,14 +481,11 @@ footer {
   margin-bottom: 8px;
 }
 
-
-
 /* ========================================
    グラフ描画領域
 ======================================== */
 
 .chart-area {
-
   display: block;
 
   min-height: 220px;
@@ -619,17 +501,13 @@ footer {
   text-align: left;
 }
 
-
 .plot-panel {
-
   min-width: 0;
 
   padding: 8px 0;
 }
 
-
 .plot-panel + .plot-panel {
-
   border-top: 1px solid var(--border);
 
   margin-top: 16px;
@@ -637,14 +515,11 @@ footer {
   padding-top: 16px;
 }
 
-
-
 /* ========================================
    Canvas
 ======================================== */
 
 .plot-canvas {
-
   display: block;
 
   width: 100%;
@@ -658,26 +533,19 @@ footer {
   user-select: none;
 }
 
-
 .plot-canvas.compact {
-
   height: 240px;
 }
 
-
 .plot-canvas:active {
-
   cursor: grabbing;
 }
-
-
 
 /* ========================================
    グラフの凡例
 ======================================== */
 
 .plot-legend {
-
   display: flex;
 
   flex-wrap: wrap;
@@ -693,14 +561,11 @@ footer {
   overflow-wrap: anywhere;
 }
 
-
-
 /* ========================================
    測定値の表示
 ======================================== */
 
 .plot-readout {
-
   min-height: 48px;
 
   padding: 8px 12px;
@@ -720,45 +585,33 @@ footer {
   overflow-wrap: anywhere;
 }
 
-
-
 /* ========================================
    レスポンシブ対応
 ======================================== */
 
 @media (max-width: 780px) {
-
   .plot-canvas {
-
     height: 280px;
   }
 
-
   .plot-canvas.compact {
-
     height: 200px;
   }
 
-
   .chart-toolbar button {
-
     width: 100%;
   }
 
-
   .chart-area {
-
     padding: 6px;
   }
 }
-
 
 /* ========================================
    統計分析・誤差分析
 ======================================== */
 
 .analysis-controls {
-
   display: flex;
 
   flex-wrap: wrap;
@@ -770,17 +623,13 @@ footer {
   margin-bottom: 12px;
 }
 
-
 .analysis-field {
-
   flex: 1;
 
   min-width: 150px;
 }
 
-
 .analysis-field label {
-
   display: block;
 
   margin-bottom: 4px;
@@ -790,9 +639,7 @@ footer {
   font-size: 12px;
 }
 
-
 .analysis-field input {
-
   width: 100%;
 
   padding: 8px 10px;
@@ -806,21 +653,15 @@ footer {
   color: var(--text);
 }
 
-
 .analysis-field input:disabled {
-
   opacity: 0.5;
 }
 
-
 .analysis-field[hidden] {
-
   display: none;
 }
 
-
 .analysis-note {
-
   color: var(--muted);
 
   font-size: 12px;
@@ -830,33 +671,25 @@ footer {
   overflow-wrap: anywhere;
 }
 
-
 #stats-table,
 #error-table {
-
   font-size: 13px;
 }
 
-
 #stats-table td,
 #error-table td {
-
   font-variant-numeric: tabular-nums;
 }
-
 
 #stats-table th:not(:first-child),
 #stats-table td:not(:first-child),
 #error-table th,
 #error-table td {
-
   text-align: right;
 }
 
-
 #stats-table th:first-child,
 #stats-table td:first-child {
-
   position: sticky;
 
   left: 0;
@@ -864,49 +697,36 @@ footer {
   background: var(--panel);
 }
 
-
 #stats-table th:first-child {
-
   background: var(--control);
 
   z-index: 1;
 }
 
-
 #stats-table tbody tr:hover,
 #error-table tbody tr:hover {
-
   background: var(--control);
 }
 
-
 @media (max-width: 780px) {
-
   .analysis-field {
-
     min-width: 100%;
   }
 }
-
 
 /* ========================================
    フィルタ処理
 ======================================== */
 
 #filter-settings {
-
   min-width: 0;
 }
 
-
 #filter-info {
-
   min-height: 20px;
 }
 
-
 .derived-manager {
-
   margin-top: 18px;
 
   padding-top: 16px;
@@ -914,17 +734,13 @@ footer {
   border-top: 1px solid var(--border);
 }
 
-
 .derived-manager h3 {
-
   margin: 0 0 10px;
 
   font-size: 14px;
 }
 
-
 .derived-manager label {
-
   display: block;
 
   margin-bottom: 4px;
@@ -934,10 +750,8 @@ footer {
   color: var(--muted);
 }
 
-
 /* 加工データであることを示す */
 .derived-tag {
-
   display: inline-block;
 
   padding: 1px 5px;
@@ -951,4 +765,97 @@ footer {
   color: var(--muted);
 
   white-space: nowrap;
+}
+
+/* ========================================
+   ピーク検出
+======================================== */
+
+.peak-details {
+  border: 1px solid var(--border);
+
+  border-radius: 7px;
+
+  padding: 12px;
+
+  margin: 12px 0;
+}
+
+.peak-details summary {
+  cursor: pointer;
+
+  font-weight: 600;
+}
+
+.peak-threshold-list {
+  display: grid;
+
+  gap: 8px;
+
+  max-height: 300px;
+
+  overflow: auto;
+}
+
+.peak-threshold-row {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(100px, 1fr);
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.peak-threshold-row span {
+  overflow-wrap: anywhere;
+}
+
+.peak-threshold-row input {
+  width: 100%;
+
+  min-width: 0;
+
+  padding: 8px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 6px;
+
+  background: var(--control);
+
+  color: var(--text);
+}
+
+.peak-heading {
+  font-size: 14px;
+
+  margin: 20px 0 10px;
+}
+
+#peak-summary-table,
+#peak-table {
+  font-size: 13px;
+}
+
+#peak-summary-table tbody tr:hover,
+#peak-table tbody tr:hover {
+  background: var(--control);
+}
+
+#peak-table td:nth-child(n + 4),
+#peak-summary-table td:nth-child(n + 3) {
+  text-align: right;
+
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 420px) {
+  .peak-threshold-row {
+    grid-template-columns: 1fr;
+
+    gap: 4px;
+  }
 }

@@ -1,3 +1,5 @@
+import { detectPeaks, peakIntervals } from "./peaks.js";
+
 import {
   difference,
   derivative,
@@ -45,6 +47,12 @@ chart.onViewChange = scheduleStatistics;
 
 // プレビューする最大行数
 const previewLimit = 12;
+
+// ピーク検出時のデータセット・横軸・選択項目
+let peakContext = null;
+
+// 項目別の閾値入力欄
+const peakThresholdInputs = new Map();
 
 /* ========================================
    共通処理
@@ -1147,6 +1155,342 @@ function applySelectedTransforms() {
   }
 }
 
+/* ========================================
+   ピーク検出
+======================================== */
+
+// 検出方向を表示用文字列に変換する
+function peakDirectionLabel(direction) {
+  return direction === "positive" ? "正方向" : "負方向";
+}
+
+// 検出結果を消去する
+function clearPeakResults(message = "検出条件を設定してください。") {
+  $("peak-table").tBodies[0].replaceChildren();
+
+  $("peak-summary-table").tBodies[0].replaceChildren();
+
+  // グラフ上のマーカーも削除する
+  chart.setPeakMarkers();
+
+  $("peak-info").textContent = message;
+}
+
+// ピーク検出用の操作画面を更新する
+function refreshPeakControls() {
+  const dataset = current();
+
+  const names = dataset ? [...selections.get(dataset.id)] : [];
+
+  $("peak-settings").disabled = !dataset || !names.length;
+
+  $("apply-peaks").disabled = !dataset || !names.length;
+
+  // 選択項目を比較するための文字列
+  const signature = JSON.stringify(names);
+
+  // データセット・横軸・選択項目が
+  // 以前と同じ場合は設定を維持する
+  if (
+    peakContext &&
+    peakContext.id === dataset?.id &&
+    peakContext.axis === dataset?.axis &&
+    peakContext.signature === signature
+  ) {
+    return;
+  }
+
+  // 現在の設定を記録する
+  peakContext = {
+    id: dataset?.id,
+
+    axis: dataset?.axis,
+
+    signature,
+  };
+
+  // 同じデータセットの入力値を可能な限り保持
+  const previous = new Map();
+
+  for (const [name, entry] of peakThresholdInputs) {
+    if (entry.datasetId === dataset?.id) {
+      previous.set(name, entry.input.value);
+    }
+  }
+
+  peakThresholdInputs.clear();
+
+  const list = $("peak-threshold-list");
+
+  list.replaceChildren();
+
+  // 選択項目ごとに閾値入力欄を生成する
+  for (const name of names) {
+    const label = document.createElement("label");
+
+    label.className = "peak-threshold-row";
+
+    const text = document.createElement("span");
+
+    text.textContent = name;
+
+    const input = document.createElement("input");
+
+    input.type = "number";
+
+    input.step = "any";
+
+    input.placeholder = "共通閾値";
+
+    input.value = previous.get(name) ?? "";
+
+    label.append(text, input);
+
+    list.append(label);
+
+    peakThresholdInputs.set(name, {
+      datasetId: dataset.id,
+
+      input,
+    });
+  }
+
+  // 古い条件による検出結果を消去する
+  clearPeakResults(
+    names.length
+      ? `${names.length} 項目を検出できます。`
+      : "表示項目を選択してください。",
+  );
+}
+
+// ピーク検出を実行する
+function runPeakDetection() {
+  const dataset = current();
+
+  if (!dataset) return;
+
+  const names = [...selections.get(dataset.id)];
+
+  if (!names.length) return;
+
+  clearPeakResults("ピークを検出しています。");
+
+  try {
+    /* ====================================
+       検出条件の取得
+    ==================================== */
+
+    const direction = $("peak-direction").value;
+
+    const threshold = $("peak-threshold").valueAsNumber;
+
+    const minProminence = $("peak-prominence").valueAsNumber;
+
+    const minDistance = $("peak-distance").valueAsNumber;
+
+    const distanceUnit = $("peak-distance-unit").value;
+
+    const scope = $("peak-scope").value;
+
+    // 横軸の値
+    const x = dataset.axis.values;
+
+    /* ====================================
+       検出範囲の設定
+    ==================================== */
+
+    let start = 0;
+
+    let end = dataset.rowCount;
+
+    // グラフの表示範囲だけを検出する場合
+    if (scope === "visible") {
+      [start, end] = rangeIndices(
+        x,
+
+        chart.view[0],
+
+        chart.view[1],
+      );
+    }
+
+    /* ====================================
+       項目ごとのピーク検出
+    ==================================== */
+
+    const results = new Map();
+
+    const summaries = [];
+
+    const directions =
+      direction === "both" ? ["positive", "negative"] : [direction];
+
+    for (const name of names) {
+      const column = manager.getColumn(
+        dataset.id,
+
+        name,
+      );
+
+      // 項目別の閾値を取得する
+      const input = peakThresholdInputs.get(name)?.input;
+
+      if (input?.validity.badInput) {
+        throw new Error(`${name}の閾値が不正です。`);
+      }
+
+      // 個別設定がなければ共通閾値を使用
+      const individualThreshold =
+        input && input.value.trim() !== "" ? input.valueAsNumber : threshold;
+
+      // ピーク検出を実行する
+      const peaks = detectPeaks(
+        column.values,
+
+        x,
+
+        {
+          direction,
+
+          threshold: individualThreshold,
+
+          minProminence,
+
+          minDistance,
+
+          distanceUnit,
+
+          start,
+
+          end,
+        },
+      );
+
+      results.set(name, peaks);
+
+      // 正方向・負方向の統計量を別々に算出
+      for (const d of directions) {
+        const count = peaks.filter((p) => p.direction === d).length;
+
+        // 同じ方向のピーク間隔を計算
+        const intervals = peakIntervals(peaks, d);
+
+        // statistics.jsを再利用する
+        const stats = summarize(intervals);
+
+        summaries.push({
+          name,
+
+          direction: d,
+
+          count,
+
+          intervalCount: intervals.length,
+
+          mean: stats.mean,
+
+          stdDev: stats.stdDev,
+        });
+      }
+    }
+
+    /* ====================================
+       検出結果の概要を表示する
+    ==================================== */
+
+    const summaryBody = $("peak-summary-table").tBodies[0];
+
+    for (const s of summaries) {
+      appendAnalysisRow(summaryBody, [
+        s.name,
+
+        peakDirectionLabel(s.direction),
+
+        s.count,
+
+        s.intervalCount,
+
+        formatStatistic(s.mean),
+
+        formatStatistic(s.stdDev),
+      ]);
+    }
+
+    /* ====================================
+       検出ピーク一覧を表示する
+    ==================================== */
+
+    const body = $("peak-table").tBodies[0];
+
+    // 大量のDOM要素が生成されることを防ぐ
+    const displayLimit = 500;
+
+    let displayed = 0;
+
+    let total = 0;
+
+    for (const [name, peaks] of results) {
+      total += peaks.length;
+
+      for (let i = 0; i < peaks.length; i++) {
+        if (displayed >= displayLimit) {
+          break;
+        }
+
+        const p = peaks[i];
+
+        appendAnalysisRow(body, [
+          name,
+
+          i + 1,
+
+          peakDirectionLabel(p.direction),
+
+          p.index,
+
+          formatStatistic(p.x),
+
+          formatStatistic(p.value),
+
+          formatStatistic(p.prominence),
+        ]);
+
+        displayed++;
+      }
+    }
+
+    /* ====================================
+       グラフ上のマーカーを更新する
+    ==================================== */
+
+    chart.setPeakMarkers(results);
+
+    /* ====================================
+       検出条件と結果を表示する
+    ==================================== */
+
+    const rangeLabel =
+      scope === "all"
+        ? "全区間"
+        : `${formatStatistic(chart.view[0])}` +
+          ` ～ ${formatStatistic(chart.view[1])}`;
+
+    $("peak-info").textContent =
+      `${names.length} 項目 / ` +
+      `${total} ピークを検出 / ` +
+      `対象 ${end - start} サンプル / ` +
+      `検出範囲：${rangeLabel} / ` +
+      `横軸：${dataset.axis.label}` +
+      (total > displayLimit ? `（一覧は先頭${displayLimit}件まで表示）` : "");
+
+    status(`${total} 件のピークを検出しました。`);
+  } catch (error) {
+    clearPeakResults(error.message);
+
+    status(error.message, true);
+  }
+}
+
 /**
  * 選択された項目のグラフを表示する
  */
@@ -1185,6 +1529,8 @@ function renderSelection() {
   refreshFilterControls();
 
   refreshTransformControls();
+
+  refreshPeakControls();
 }
 
 /* ========================================
@@ -1678,6 +2024,35 @@ $("apply-transform").addEventListener(
   "click",
 
   applySelectedTransforms,
+);
+
+/* ========================================
+   ピーク検出の操作イベント
+======================================== */
+
+// 検出条件が変更された場合
+$("peak-settings").addEventListener(
+  "input",
+
+  () => {
+    clearPeakResults("検出条件が変更されました。再検出してください。");
+  },
+);
+
+// ピーク検出を実行する
+$("apply-peaks").addEventListener(
+  "click",
+
+  runPeakDetection,
+);
+
+// 検出結果を消去する
+$("clear-peaks").addEventListener(
+  "click",
+
+  () => {
+    clearPeakResults("検出結果を消去しました。");
+  },
 );
 
 render();

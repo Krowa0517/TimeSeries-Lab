@@ -1,935 +1,724 @@
-
 <!doctype html>
 <html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TimeSeries Lab</title>
 
-  <title>TimeSeries Lab</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
 
-  <link rel="stylesheet" href="./css/style.css">
-</head>
-
-<body>
-
-  <!-- ヘッダー -->
-  <header class="app-header">
-    <div>
-      <h1>TimeSeries Lab</h1>
-      <p>複数の時系列データを可視化・加工・分析</p>
-    </div>
-
-    <span class="version">v0.1.0-dev</span>
-  </header>
-
-
-  <!-- メイン画面 -->
-  <main class="workspace">
-
-    <!-- 左側：操作パネル -->
-    <aside class="sidebar" aria-label="データと表示設定">
-
-      <!-- データセット管理 -->
-      <section class="panel">
-
-        <h2>データセット</h2>
-
-        <label for="delimiter">区切り文字</label>
-
-        <select id="delimiter">
-          <option value="auto">自動判定</option>
-          <option value="comma">カンマ</option>
-          <option value="tab">タブ</option>
-          <option value="semicolon">セミコロン</option>
-        </select>
-
-
-        <label for="encoding">文字コード</label>
-
-        <select id="encoding">
-          <option value="utf-8">UTF-8</option>
-          <option value="shift_jis">Shift-JIS</option>
-        </select>
-
-
-        <label class="upload" for="file-input">
-          CSV / TSV ファイルを選択（複数可）
-        </label>
-
-        <input
-          id="file-input"
-          type="file"
-          accept=".csv,.tsv,.txt"
-          multiple
-        >
-
-
-        <button id="sample-button" type="button">
-          サンプルを読み込む
-        </button>
-
-
-        <label for="dataset-select">
-          現在のデータセット
-        </label>
-
-        <select id="dataset-select" disabled>
-        </select>
-
-
-        <button
-          id="remove-button"
-          type="button"
-          class="secondary"
-          disabled
-        >
-          選択中のデータを削除
-        </button>
-
-      </section>
-
-
-      <!-- 横軸設定 -->
-      <section class="panel">
-
-        <h2>横軸設定</h2>
-
-        <fieldset id="axis-settings" disabled>
-
-          <label for="axis-kind">
-            横軸の形式
-          </label>
-
-          <select id="axis-kind">
-            <option value="index">サンプル番号</option>
-            <option value="numeric">数値列</option>
-            <option value="datetime">日付・日時（ISO）</option>
-            <option value="clock">時刻（HH:mm:ss）</option>
-          </select>
-
-
-          <label for="axis-column">
-            対象列
-          </label>
-
-          <select id="axis-column" disabled>
-          </select>
-
-
-          <label for="axis-unit">
-            入力単位（数値列のみ）
-          </label>
-
-          <select id="axis-unit" disabled>
-            <option value="raw">変換なし</option>
-            <option value="s">秒</option>
-            <option value="ms">ミリ秒</option>
-            <option value="us">マイクロ秒</option>
-            <option value="min">分</option>
-            <option value="h">時間</option>
-          </select>
-
-
-          <button id="apply-axis" type="button">
-            横軸を適用
-          </button>
-
-        </fieldset>
-
-        <p id="axis-summary" class="muted">
-          未設定
-        </p>
-
-      </section>
-
-
-      <!-- 表示項目設定 -->
-      <section class="panel">
-
-        <h2>表示項目</h2>
-
-        <div class="button-row">
-
-          <button
-            id="select-all"
-            type="button"
-            class="secondary"
-            disabled
-          >
-            全選択
-          </button>
-
-          <button
-            id="select-none"
-            type="button"
-            class="secondary"
-            disabled
-          >
-            解除
-          </button>
-
-        </div>
-
-        <div id="column-list" class="column-list">
-        </div>
-
-      </section>
-
-    </aside>
-
-
-    <!-- 右側：分析結果 -->
-    <section class="content" aria-label="分析結果">
-
-      <!-- 状態表示 -->
-      <p id="status" class="status" role="status">
-        CSVファイルを読み込んでください。
-      </p>
-
-
-      <!-- データの概要 -->
-      <div class="metrics">
-
-        <div class="metric">
-          <span>行数</span>
-          <strong id="row-count">—</strong>
-        </div>
-
-        <div class="metric">
-          <span>列数</span>
-          <strong id="column-count">—</strong>
-        </div>
-
-        <div class="metric">
-          <span>欠損セル数</span>
-          <strong id="missing-count">—</strong>
-        </div>
-
+  <body>
+    <!-- ヘッダー -->
+    <header class="app-header">
+      <div>
+        <h1>TimeSeries Lab</h1>
+        <p>複数の時系列データを可視化・加工・分析</p>
       </div>
 
+      <span class="version">v0.1.0-dev</span>
+    </header>
 
-      <!-- グラフ描画領域 -->
-      <section class="panel">
+    <!-- メイン画面 -->
+    <main class="workspace">
+      <!-- 左側：操作パネル -->
+      <aside class="sidebar" aria-label="データと表示設定">
+        <!-- データセット管理 -->
+        <section class="panel">
+          <h2>データセット</h2>
 
-        <div class="section-heading">
+          <label for="delimiter">区切り文字</label>
 
-          <h2>時系列グラフ</h2>
+          <select id="delimiter">
+            <option value="auto">自動判定</option>
+            <option value="comma">カンマ</option>
+            <option value="tab">タブ</option>
+            <option value="semicolon">セミコロン</option>
+          </select>
 
-          <span id="selection-count" class="muted">
-            0 項目選択中
-          </span>
+          <label for="encoding">文字コード</label>
 
-        </div>
+          <select id="encoding">
+            <option value="utf-8">UTF-8</option>
+            <option value="shift_jis">Shift-JIS</option>
+          </select>
 
-        
-        <!-- グラフ表示設定 -->
-        <div class="chart-toolbar">
+          <label class="upload" for="file-input">
+            CSV / TSV ファイルを選択（複数可）
+          </label>
 
-          <div class="chart-control">
+          <input id="file-input" type="file" accept=".csv,.tsv,.txt" multiple />
 
-            <label for="chart-mode">
-              表示形式
-            </label>
+          <button id="sample-button" type="button">サンプルを読み込む</button>
 
-            <select id="chart-mode">
+          <label for="dataset-select"> 現在のデータセット </label>
 
-              <option value="overlay">
-                重ね合わせ表示
-              </option>
+          <select id="dataset-select" disabled></select>
 
-              <option value="separate">
-                個別グラフ表示
-              </option>
+          <button id="remove-button" type="button" class="secondary" disabled>
+            選択中のデータを削除
+          </button>
+        </section>
 
+        <!-- 横軸設定 -->
+        <section class="panel">
+          <h2>横軸設定</h2>
+
+          <fieldset id="axis-settings" disabled>
+            <label for="axis-kind"> 横軸の形式 </label>
+
+            <select id="axis-kind">
+              <option value="index">サンプル番号</option>
+              <option value="numeric">数値列</option>
+              <option value="datetime">日付・日時（ISO）</option>
+              <option value="clock">時刻（HH:mm:ss）</option>
             </select>
 
-          </div>
+            <label for="axis-column"> 対象列 </label>
 
+            <select id="axis-column" disabled></select>
 
-          <div class="chart-control">
+            <label for="axis-unit"> 入力単位（数値列のみ） </label>
 
-            <label for="chart-scale">
-              縦軸の表示
-            </label>
-
-            <select id="chart-scale">
-
-              <option value="raw">
-                元の値
-              </option>
-
-              <option value="normalized">
-                Min-Max正規化
-              </option>
-
+            <select id="axis-unit" disabled>
+              <option value="raw">変換なし</option>
+              <option value="s">秒</option>
+              <option value="ms">ミリ秒</option>
+              <option value="us">マイクロ秒</option>
+              <option value="min">分</option>
+              <option value="h">時間</option>
             </select>
 
-          </div>
-
-
-          <button
-            id="reset-chart"
-            type="button"
-            class="secondary"
-          >
-            表示範囲をリセット
-          </button>
-
-        </div>
-
-
-        <p class="chart-help">
-
-          ホイール：拡大・縮小 ／
-          ドラッグ：移動 ／
-          カーソル：測定値の確認
-
-        </p>
-
-
-        <p class="chart-help">
-
-          異なる単位の項目を比較する場合は、
-          個別表示または正規化を推奨します。
-
-        </p>
-
-
-        <!-- グラフ描画領域 -->
-        <div id="chart-area" class="chart-area">
-
-          表示する数値列を選択してください。
-
-        </div>
-
-
-      </section>
-      
-      <!-- データ変換 -->
-      <section class="panel">
-
-        <h2>データ変換・演算</h2>
-
-        <fieldset id="transform-settings" disabled>
-
-          <div class="analysis-controls">
-
-            <!-- 変換処理の種類 -->
-            <div class="analysis-field">
-
-              <label for="transform-method">
-                処理の種類
-              </label>
-
-              <select id="transform-method">
-
-                <option value="difference">
-                  Nサンプル差分
-                </option>
-
-                <option value="derivative">
-                  時間微分
-                </option>
-
-                <option value="absolute">
-                  絶対値
-                </option>
-
-                <option value="constant">
-                  定数との四則演算
-                </option>
-
-                <option value="binary">
-                  データ列同士の四則演算
-                </option>
-
-                <option value="magnitude">
-                  ベクトルの大きさ
-                </option>
-
-                <option value="minmax">
-                  Min-Max正規化
-                </option>
-
-                <option value="zscore">
-                  Z-score標準化
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <!-- 差分サンプル数 -->
-            <div
-              id="transform-lag-field"
-              class="analysis-field"
-            >
-
-              <label for="transform-lag">
-                差分サンプル数 N
-              </label>
-
-              <input
-                id="transform-lag"
-                type="number"
-                min="1"
-                step="1"
-                value="1"
-              >
-
-            </div>
-
-
-            <!-- 演算子 -->
-            <div
-              id="transform-operator-field"
-              class="analysis-field"
-              hidden
-            >
-
-              <label for="transform-operator">
-                演算方法
-              </label>
-
-              <select id="transform-operator">
-
-                <option value="add">加算（＋）</option>
-
-                <option value="subtract">減算（−）</option>
-
-                <option value="multiply">乗算（×）</option>
-
-                <option value="divide">除算（÷）</option>
-
-              </select>
-
-            </div>
-
-
-            <!-- 定数 -->
-            <div
-              id="transform-constant-field"
-              class="analysis-field"
-              hidden
-            >
-
-              <label for="transform-constant">
-                定数
-              </label>
-
-              <input
-                id="transform-constant"
-                type="number"
-                step="any"
-                value="1"
-              >
-
-            </div>
-
-
-            <!-- データ列A -->
-            <div
-              id="transform-a-field"
-              class="analysis-field"
-              hidden
-            >
-
-              <label for="transform-a">
-                データ列 A
-              </label>
-
-              <select id="transform-a"></select>
-
-            </div>
-
-
-            <!-- データ列B -->
-            <div
-              id="transform-b-field"
-              class="analysis-field"
-              hidden
-            >
-
-              <label for="transform-b">
-                データ列 B
-              </label>
-
-              <select id="transform-b"></select>
-
-            </div>
-
-          </div>
-
-
-          <button
-            id="apply-transform"
-            type="button"
-            disabled
-          >
-            データ変換を実行
-          </button>
-
-
-          <p
-            id="transform-info"
-            class="analysis-note"
-          >
-            データを読み込んでください。
-          </p>
-
-
-          <p class="analysis-note">
-
-            加工結果は新しい列として保存されます。
-            元データは変更されません。
-            時間微分には秒単位の横軸が必要です。
-
-          </p>
-
-        </fieldset>
-
-      </section>
-
-      <!-- フィルタ処理 -->
-      <section class="panel">
-
-        <h2>フィルタ処理</h2>
-
-        <fieldset id="filter-settings" disabled>
-
-          <div class="analysis-controls">
-
-            <!-- フィルタの種類 -->
-            <div class="analysis-field">
-
-              <label for="filter-method">
-                フィルタの種類
-              </label>
-
-              <select id="filter-method">
-
-                <option value="sma">
-                  単純移動平均（SMA）
-                </option>
-
-                <option value="median">
-                  中央値フィルタ
-                </option>
-
-                <option value="ema">
-                  指数移動平均（EMA）
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <!-- 窓幅 -->
-            <div
-              id="filter-size-field"
-              class="analysis-field"
-            >
-
-              <label for="filter-size">
-                窓幅（サンプル数）
-              </label>
-
-              <input
-                id="filter-size"
-                type="number"
-                min="1"
-                step="1"
-                value="5"
-              >
-
-            </div>
-
-
-            <!-- 処理方向 -->
-            <div
-              id="filter-direction-field"
-              class="analysis-field"
-            >
-
-              <label for="filter-direction">
-                処理方向
-              </label>
-
-              <select id="filter-direction">
-
-                <option value="center">
-                  中央
-                </option>
-
-                <option value="trailing">
-                  後方
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <!-- EMAの平滑化係数 -->
-            <div
-              id="filter-alpha-field"
-              class="analysis-field"
-              hidden
-            >
-
-              <label for="filter-alpha">
-                平滑化係数 α
-              </label>
-
-              <input
-                id="filter-alpha"
-                type="number"
-                min="0.001"
-                max="1"
-                step="any"
-                value="0.25"
-              >
-
-            </div>
-
-          </div>
-
-
-          <!-- フィルタの適用 -->
-          <button
-            id="apply-filter"
-            type="button"
-            disabled
-          >
-            選択中の項目にフィルタを適用
-          </button>
-
-
-          <p id="filter-info" class="analysis-note">
-            データを読み込んでください。
-          </p>
-
-
-          <p class="analysis-note">
-
-            フィルタはデータ列全体に適用します。
-            元データは変更されません。
-            中央フィルタの窓幅には奇数を指定してください。
-
-          </p>
-
-
-          <!-- 加工データの管理 -->
-          <div class="derived-manager">
-
-            <h3>加工データの管理</h3>
-
-            <label for="derived-select">
-              削除する加工データ
-            </label>
-
-            <select id="derived-select" disabled>
-            </select>
-
-            <button
-              id="remove-derived"
-              type="button"
-              class="secondary"
-              disabled
-            >
-              加工データを削除
+            <button id="apply-axis" type="button">横軸を適用</button>
+          </fieldset>
+
+          <p id="axis-summary" class="muted">未設定</p>
+        </section>
+
+        <!-- 表示項目設定 -->
+        <section class="panel">
+          <h2>表示項目</h2>
+
+          <div class="button-row">
+            <button id="select-all" type="button" class="secondary" disabled>
+              全選択
             </button>
 
+            <button id="select-none" type="button" class="secondary" disabled>
+              解除
+            </button>
           </div>
 
-        </fieldset>
+          <div id="column-list" class="column-list"></div>
+        </section>
+      </aside>
 
-      </section>
-
-      <!-- 基本統計分析 -->
-      <section class="panel">
-
-        <div class="section-heading">
-
-          <h2>基本統計量</h2>
-
-          <span id="stats-info" class="muted">
-            データ未読み込み
-          </span>
-
-        </div>
-
-
-        <div class="analysis-controls">
-
-          <div class="analysis-field">
-
-            <label for="stats-scope">
-              分析範囲
-            </label>
-
-            <select id="stats-scope">
-
-              <option value="all">
-                全区間
-              </option>
-
-              <option value="visible">
-                グラフの表示区間
-              </option>
-
-            </select>
-
-          </div>
-
-        </div>
-
-
-        <p class="analysis-note">
-
-          分散・標準偏差は母分散に基づきます。
-          欠損値は計算から除外します。
-          正規化表示中も元の数値を分析します。
-
+      <!-- 右側：分析結果 -->
+      <section class="content" aria-label="分析結果">
+        <!-- 状態表示 -->
+        <p id="status" class="status" role="status">
+          CSVファイルを読み込んでください。
         </p>
 
+        <!-- データの概要 -->
+        <div class="metrics">
+          <div class="metric">
+            <span>行数</span>
+            <strong id="row-count">—</strong>
+          </div>
 
-        <div
-          class="table-scroll"
-          tabindex="0"
-          role="region"
-          aria-label="基本統計量"
-        >
+          <div class="metric">
+            <span>列数</span>
+            <strong id="column-count">—</strong>
+          </div>
 
-          <table id="stats-table">
-
-            <thead>
-
-              <tr>
-
-                <th>項目</th>
-
-                <th>データ数</th>
-
-                <th>有効数</th>
-
-                <th>欠損数</th>
-
-                <th>欠損率</th>
-
-                <th>平均値</th>
-
-                <th>中央値</th>
-
-                <th>最小値</th>
-
-                <th>最大値</th>
-
-                <th>範囲</th>
-
-                <th>分散</th>
-
-                <th>標準偏差</th>
-
-                <th>第1四分位数</th>
-
-                <th>第3四分位数</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody></tbody>
-
-          </table>
-
+          <div class="metric">
+            <span>欠損セル数</span>
+            <strong id="missing-count">—</strong>
+          </div>
         </div>
 
-      </section>
+        <!-- グラフ描画領域 -->
+        <section class="panel">
+          <div class="section-heading">
+            <h2>時系列グラフ</h2>
 
+            <span id="selection-count" class="muted"> 0 項目選択中 </span>
+          </div>
 
+          <!-- グラフ表示設定 -->
+          <div class="chart-toolbar">
+            <div class="chart-control">
+              <label for="chart-mode"> 表示形式 </label>
 
-      <!-- 誤差分析 -->
-      <section class="panel">
+              <select id="chart-mode">
+                <option value="overlay">重ね合わせ表示</option>
 
-        <h2>誤差分析</h2>
+                <option value="separate">個別グラフ表示</option>
+              </select>
+            </div>
 
+            <div class="chart-control">
+              <label for="chart-scale"> 縦軸の表示 </label>
 
-        <fieldset id="error-settings" disabled>
+              <select id="chart-scale">
+                <option value="raw">元の値</option>
+
+                <option value="normalized">Min-Max正規化</option>
+              </select>
+            </div>
+
+            <button id="reset-chart" type="button" class="secondary">
+              表示範囲をリセット
+            </button>
+          </div>
+
+          <p class="chart-help">
+            ホイール：拡大・縮小 ／ ドラッグ：移動 ／ カーソル：測定値の確認
+          </p>
+
+          <p class="chart-help">
+            異なる単位の項目を比較する場合は、
+            個別表示または正規化を推奨します。
+          </p>
+
+          <!-- グラフ描画領域 -->
+          <div id="chart-area" class="chart-area">
+            表示する数値列を選択してください。
+          </div>
+        </section>
+
+        <!-- ピーク検出 -->
+        <section class="panel">
+          <h2>ピーク検出</h2>
+
+          <fieldset id="peak-settings" disabled>
+            <div class="analysis-controls">
+              <!-- 検出方向 -->
+              <div class="analysis-field">
+                <label for="peak-direction"> 検出方向 </label>
+
+                <select id="peak-direction">
+                  <option value="positive">正方向</option>
+
+                  <option value="negative">負方向</option>
+
+                  <option value="both">両方向</option>
+                </select>
+              </div>
+
+              <!-- 分析範囲 -->
+              <div class="analysis-field">
+                <label for="peak-scope"> 検出範囲 </label>
+
+                <select id="peak-scope">
+                  <option value="all">全区間</option>
+
+                  <option value="visible">グラフの表示区間</option>
+                </select>
+              </div>
+
+              <!-- 振幅の閾値 -->
+              <div class="analysis-field">
+                <label for="peak-threshold"> 共通の振幅閾値 </label>
+
+                <input id="peak-threshold" type="number" step="any" value="0" />
+              </div>
+
+              <!-- 突出度 -->
+              <div class="analysis-field">
+                <label for="peak-prominence"> 最小突出度 </label>
+
+                <input
+                  id="peak-prominence"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="0"
+                />
+              </div>
+
+              <!-- 最小ピーク間隔 -->
+              <div class="analysis-field">
+                <label for="peak-distance"> 最小ピーク間隔 </label>
+
+                <input
+                  id="peak-distance"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value="1"
+                />
+              </div>
+
+              <!-- 間隔の単位 -->
+              <div class="analysis-field">
+                <label for="peak-distance-unit"> 間隔の単位 </label>
+
+                <select id="peak-distance-unit">
+                  <option value="sample">サンプル数</option>
+
+                  <option value="axis">横軸の単位</option>
+                </select>
+              </div>
+            </div>
+
+            <p class="analysis-note">
+              閾値をTとすると、正方向ではT以上、
+              負方向では-T以下の局所的な極値を検出します。
+              突出度と振幅の条件は元の数値に適用されます。
+            </p>
+
+            <!-- 項目別の閾値設定 -->
+            <details class="peak-details">
+              <summary>項目別の閾値設定</summary>
+
+              <p class="analysis-note">
+                空欄の場合は共通の振幅閾値を使用します。
+              </p>
+
+              <div id="peak-threshold-list" class="peak-threshold-list"></div>
+            </details>
+
+            <div class="button-row">
+              <button id="apply-peaks" type="button" disabled>
+                ピークを検出
+              </button>
+
+              <button id="clear-peaks" type="button" class="secondary">
+                検出結果を消去
+              </button>
+            </div>
+          </fieldset>
+
+          <p id="peak-info" class="analysis-note">
+            データを読み込んでください。
+          </p>
+
+          <!-- ピーク間隔の概要 -->
+          <h3 class="peak-heading">検出結果の概要</h3>
+
+          <div
+            class="table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="ピーク検出結果の概要"
+          >
+            <table id="peak-summary-table">
+              <thead>
+                <tr>
+                  <th>項目</th>
+                  <th>方向</th>
+                  <th>検出数</th>
+                  <th>有効間隔数</th>
+                  <th>平均間隔</th>
+                  <th>間隔の標準偏差</th>
+                </tr>
+              </thead>
+
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- 個々のピークの検出結果 -->
+          <h3 class="peak-heading">検出ピーク一覧</h3>
+
+          <div
+            class="table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="検出ピーク一覧"
+          >
+            <table id="peak-table">
+              <thead>
+                <tr>
+                  <th>項目</th>
+                  <th>番号</th>
+                  <th>方向</th>
+                  <th>サンプル番号</th>
+                  <th>横軸の値</th>
+                  <th>振幅</th>
+                  <th>突出度</th>
+                </tr>
+              </thead>
+
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <p class="analysis-note">
+            サンプル番号は0から開始します。
+            欠損区間の端点はピークとして検出しません。
+            検出結果は実行時点の範囲に対する結果です。
+          </p>
+        </section>
+
+        <!-- データ変換 -->
+        <section class="panel">
+          <h2>データ変換・演算</h2>
+
+          <fieldset id="transform-settings" disabled>
+            <div class="analysis-controls">
+              <!-- 変換処理の種類 -->
+              <div class="analysis-field">
+                <label for="transform-method"> 処理の種類 </label>
+
+                <select id="transform-method">
+                  <option value="difference">Nサンプル差分</option>
+
+                  <option value="derivative">時間微分</option>
+
+                  <option value="absolute">絶対値</option>
+
+                  <option value="constant">定数との四則演算</option>
+
+                  <option value="binary">データ列同士の四則演算</option>
+
+                  <option value="magnitude">ベクトルの大きさ</option>
+
+                  <option value="minmax">Min-Max正規化</option>
+
+                  <option value="zscore">Z-score標準化</option>
+                </select>
+              </div>
+
+              <!-- 差分サンプル数 -->
+              <div id="transform-lag-field" class="analysis-field">
+                <label for="transform-lag"> 差分サンプル数 N </label>
+
+                <input
+                  id="transform-lag"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value="1"
+                />
+              </div>
+
+              <!-- 演算子 -->
+              <div id="transform-operator-field" class="analysis-field" hidden>
+                <label for="transform-operator"> 演算方法 </label>
+
+                <select id="transform-operator">
+                  <option value="add">加算（＋）</option>
+
+                  <option value="subtract">減算（−）</option>
+
+                  <option value="multiply">乗算（×）</option>
+
+                  <option value="divide">除算（÷）</option>
+                </select>
+              </div>
+
+              <!-- 定数 -->
+              <div id="transform-constant-field" class="analysis-field" hidden>
+                <label for="transform-constant"> 定数 </label>
+
+                <input
+                  id="transform-constant"
+                  type="number"
+                  step="any"
+                  value="1"
+                />
+              </div>
+
+              <!-- データ列A -->
+              <div id="transform-a-field" class="analysis-field" hidden>
+                <label for="transform-a"> データ列 A </label>
+
+                <select id="transform-a"></select>
+              </div>
+
+              <!-- データ列B -->
+              <div id="transform-b-field" class="analysis-field" hidden>
+                <label for="transform-b"> データ列 B </label>
+
+                <select id="transform-b"></select>
+              </div>
+            </div>
+
+            <button id="apply-transform" type="button" disabled>
+              データ変換を実行
+            </button>
+
+            <p id="transform-info" class="analysis-note">
+              データを読み込んでください。
+            </p>
+
+            <p class="analysis-note">
+              加工結果は新しい列として保存されます。 元データは変更されません。
+              時間微分には秒単位の横軸が必要です。
+            </p>
+          </fieldset>
+        </section>
+
+        <!-- フィルタ処理 -->
+        <section class="panel">
+          <h2>フィルタ処理</h2>
+
+          <fieldset id="filter-settings" disabled>
+            <div class="analysis-controls">
+              <!-- フィルタの種類 -->
+              <div class="analysis-field">
+                <label for="filter-method"> フィルタの種類 </label>
+
+                <select id="filter-method">
+                  <option value="sma">単純移動平均（SMA）</option>
+
+                  <option value="median">中央値フィルタ</option>
+
+                  <option value="ema">指数移動平均（EMA）</option>
+                </select>
+              </div>
+
+              <!-- 窓幅 -->
+              <div id="filter-size-field" class="analysis-field">
+                <label for="filter-size"> 窓幅（サンプル数） </label>
+
+                <input
+                  id="filter-size"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value="5"
+                />
+              </div>
+
+              <!-- 処理方向 -->
+              <div id="filter-direction-field" class="analysis-field">
+                <label for="filter-direction"> 処理方向 </label>
+
+                <select id="filter-direction">
+                  <option value="center">中央</option>
+
+                  <option value="trailing">後方</option>
+                </select>
+              </div>
+
+              <!-- EMAの平滑化係数 -->
+              <div id="filter-alpha-field" class="analysis-field" hidden>
+                <label for="filter-alpha"> 平滑化係数 α </label>
+
+                <input
+                  id="filter-alpha"
+                  type="number"
+                  min="0.001"
+                  max="1"
+                  step="any"
+                  value="0.25"
+                />
+              </div>
+            </div>
+
+            <!-- フィルタの適用 -->
+            <button id="apply-filter" type="button" disabled>
+              選択中の項目にフィルタを適用
+            </button>
+
+            <p id="filter-info" class="analysis-note">
+              データを読み込んでください。
+            </p>
+
+            <p class="analysis-note">
+              フィルタはデータ列全体に適用します。 元データは変更されません。
+              中央フィルタの窓幅には奇数を指定してください。
+            </p>
+
+            <!-- 加工データの管理 -->
+            <div class="derived-manager">
+              <h3>加工データの管理</h3>
+
+              <label for="derived-select"> 削除する加工データ </label>
+
+              <select id="derived-select" disabled></select>
+
+              <button
+                id="remove-derived"
+                type="button"
+                class="secondary"
+                disabled
+              >
+                加工データを削除
+              </button>
+            </div>
+          </fieldset>
+        </section>
+
+        <!-- 基本統計分析 -->
+        <section class="panel">
+          <div class="section-heading">
+            <h2>基本統計量</h2>
+
+            <span id="stats-info" class="muted"> データ未読み込み </span>
+          </div>
 
           <div class="analysis-controls">
-
             <div class="analysis-field">
+              <label for="stats-scope"> 分析範囲 </label>
 
-              <label for="error-measured">
-                測定値の項目
-              </label>
+              <select id="stats-scope">
+                <option value="all">全区間</option>
 
-              <select id="error-measured">
+                <option value="visible">グラフの表示区間</option>
               </select>
-
             </div>
-
-
-            <div class="analysis-field">
-
-              <label for="reference-mode">
-                基準値の形式
-              </label>
-
-              <select id="reference-mode">
-
-                <option value="constant">
-                  一定の数値
-                </option>
-
-                <option value="column">
-                  別のデータ列
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div
-              id="reference-value-field"
-              class="analysis-field"
-            >
-
-              <label for="reference-value">
-                基準値
-              </label>
-
-              <input
-                id="reference-value"
-                type="number"
-                step="any"
-                placeholder="基準値を入力"
-              >
-
-            </div>
-
-
-            <div
-              id="reference-column-field"
-              class="analysis-field"
-              hidden
-            >
-
-              <label for="reference-column">
-                基準データ列
-              </label>
-
-              <select id="reference-column">
-              </select>
-
-            </div>
-
           </div>
 
-        </fieldset>
+          <p class="analysis-note">
+            分散・標準偏差は母分散に基づきます。 欠損値は計算から除外します。
+            正規化表示中も元の数値を分析します。
+          </p>
 
+          <div
+            class="table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="基本統計量"
+          >
+            <table id="stats-table">
+              <thead>
+                <tr>
+                  <th>項目</th>
 
-        <p id="error-info" class="analysis-note">
+                  <th>データ数</th>
 
-          データを読み込んでください。
+                  <th>有効数</th>
 
-        </p>
+                  <th>欠損数</th>
 
+                  <th>欠損率</th>
 
-        <div
-          class="table-scroll"
-          tabindex="0"
-          role="region"
-          aria-label="誤差分析結果"
-        >
+                  <th>平均値</th>
 
-          <table id="error-table">
+                  <th>中央値</th>
 
-            <thead>
+                  <th>最小値</th>
 
-              <tr>
+                  <th>最大値</th>
 
-                <th>有効データ数</th>
+                  <th>範囲</th>
 
-                <th>除外数</th>
+                  <th>分散</th>
 
-                <th>平均誤差</th>
+                  <th>標準偏差</th>
 
-                <th>MAE</th>
+                  <th>第1四分位数</th>
 
-                <th>MSE</th>
+                  <th>第3四分位数</th>
+                </tr>
+              </thead>
 
-                <th>RMSE</th>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
 
-              </tr>
+        <!-- 誤差分析 -->
+        <section class="panel">
+          <h2>誤差分析</h2>
 
-            </thead>
+          <fieldset id="error-settings" disabled>
+            <div class="analysis-controls">
+              <div class="analysis-field">
+                <label for="error-measured"> 測定値の項目 </label>
 
-            <tbody></tbody>
+                <select id="error-measured"></select>
+              </div>
 
-          </table>
+              <div class="analysis-field">
+                <label for="reference-mode"> 基準値の形式 </label>
 
-        </div>
+                <select id="reference-mode">
+                  <option value="constant">一定の数値</option>
 
+                  <option value="column">別のデータ列</option>
+                </select>
+              </div>
 
-        <p class="analysis-note">
+              <div id="reference-value-field" class="analysis-field">
+                <label for="reference-value"> 基準値 </label>
 
-          誤差 = 測定値 − 基準値。
-          比較する項目の単位は統一してください。
+                <input
+                  id="reference-value"
+                  type="number"
+                  step="any"
+                  placeholder="基準値を入力"
+                />
+              </div>
 
-        </p>
+              <div id="reference-column-field" class="analysis-field" hidden>
+                <label for="reference-column"> 基準データ列 </label>
 
+                <select id="reference-column"></select>
+              </div>
+            </div>
+          </fieldset>
+
+          <p id="error-info" class="analysis-note">
+            データを読み込んでください。
+          </p>
+
+          <div
+            class="table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="誤差分析結果"
+          >
+            <table id="error-table">
+              <thead>
+                <tr>
+                  <th>有効データ数</th>
+
+                  <th>除外数</th>
+
+                  <th>平均誤差</th>
+
+                  <th>MAE</th>
+
+                  <th>MSE</th>
+
+                  <th>RMSE</th>
+                </tr>
+              </thead>
+
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <p class="analysis-note">
+            誤差 = 測定値 − 基準値。 比較する項目の単位は統一してください。
+          </p>
+        </section>
+
+        <!-- データプレビュー -->
+        <section class="panel">
+          <div class="section-heading">
+            <h2>データプレビュー</h2>
+
+            <span id="preview-info" class="muted"> 先頭12行まで </span>
+          </div>
+
+          <div
+            class="table-scroll"
+            tabindex="0"
+            role="region"
+            aria-label="CSVデータプレビュー"
+          >
+            <table id="preview-table">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
       </section>
+    </main>
 
+    <!-- フッター -->
+    <footer>
+      TimeSeries Lab — 読み込んだファイルはブラウザ内で処理します。
+    </footer>
 
-      <!-- データプレビュー -->
-      <section class="panel">
-
-        <div class="section-heading">
-
-          <h2>データプレビュー</h2>
-
-          <span id="preview-info" class="muted">
-            先頭12行まで
-          </span>
-
-        </div>
-
-
-        <div
-          class="table-scroll"
-          tabindex="0"
-          role="region"
-          aria-label="CSVデータプレビュー"
-        >
-
-          <table id="preview-table">
-            <thead></thead>
-            <tbody></tbody>
-          </table>
-
-        </div>
-
-      </section>
-
-    </section>
-
-  </main>
-
-
-  <!-- フッター -->
-  <footer>
-    TimeSeries Lab — 読み込んだファイルはブラウザ内で処理します。
-  </footer>
-
-
-  <script type="module" src="./js/main.js"></script>
-
-</body>
-
+    <script type="module" src="./js/main.js"></script>
+  </body>
 </html>
