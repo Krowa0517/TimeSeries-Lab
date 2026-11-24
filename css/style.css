@@ -956,3 +956,96 @@ footer {
   width: 100%;
   height: auto;
 }
+
+/* ========================================
+   人工データ生成
+======================================== */
+
+.generator-panel summary {
+  cursor: pointer;
+
+  font-size: 16px;
+
+  font-weight: 600;
+}
+
+.generator-panel[open] summary {
+  margin-bottom: 16px;
+}
+
+.generator-reference {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin: 12px 0;
+
+  color: var(--text);
+}
+
+.generator-reference input {
+  accent-color: var(--accent);
+}
+
+#generator-table {
+  font-size: 12px;
+
+  width: max-content;
+
+  min-width: 100%;
+}
+
+#generator-table th {
+  white-space: nowrap;
+}
+
+#generator-table td {
+  padding: 6px;
+}
+
+#generator-table input,
+#generator-table select {
+  width: 100%;
+
+  min-width: 90px;
+
+  padding: 7px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 5px;
+
+  background: var(--control);
+
+  color: var(--text);
+
+  font-size: 12px;
+}
+
+#generator-table input[type="text"] {
+  min-width: 140px;
+}
+
+#generator-table select {
+  min-width: 130px;
+}
+
+#generator-table button {
+  width: auto;
+
+  margin: 0;
+
+  padding: 7px 10px;
+
+  font-size: 12px;
+}
+
+#generator-table input:disabled {
+  opacity: 0.3;
+}
+
+#generator-info {
+  white-space: pre-wrap;
+}

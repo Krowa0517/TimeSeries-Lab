@@ -189,6 +189,139 @@
           </div>
         </section>
 
+        <!-- 人工データ生成 -->
+        <section class="panel">
+          <details class="generator-panel">
+            <summary>人工データ生成</summary>
+
+            <p class="analysis-note">
+              CSVを持っていない場合でも、 人工データを生成して分析できます。
+            </p>
+
+            <div class="analysis-controls">
+              <div class="analysis-field">
+                <label for="generator-duration"> 測定時間（秒） </label>
+                <input
+                  id="generator-duration"
+                  type="number"
+                  min="0.001"
+                  max="3600"
+                  step="any"
+                  value="5"
+                />
+              </div>
+
+              <div class="analysis-field">
+                <label for="generator-rate"> サンプリング周波数（Hz） </label>
+                <input
+                  id="generator-rate"
+                  type="number"
+                  min="0.1"
+                  max="10000"
+                  step="any"
+                  value="100"
+                />
+              </div>
+
+              <div class="analysis-field">
+                <label for="generator-jitter"> 時刻のばらつき（%） </label>
+                <input
+                  id="generator-jitter"
+                  type="number"
+                  min="0"
+                  max="90"
+                  step="any"
+                  value="0"
+                />
+              </div>
+
+              <div class="analysis-field">
+                <label for="generator-missing"> 欠損確率（%） </label>
+                <input
+                  id="generator-missing"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="any"
+                  value="0"
+                />
+              </div>
+
+              <div class="analysis-field">
+                <label for="generator-seed"> 乱数シード </label>
+                <input
+                  id="generator-seed"
+                  type="number"
+                  min="0"
+                  max="4294967295"
+                  step="1"
+                  value="12345"
+                />
+              </div>
+
+              <div class="analysis-field">
+                <label for="generator-noise-kind"> ノイズの種類 </label>
+                <select id="generator-noise-kind">
+                  <option value="gaussian">ガウスノイズ</option>
+                  <option value="uniform">一様ノイズ</option>
+                </select>
+              </div>
+            </div>
+
+            <label class="generator-reference">
+              <input id="generator-reference" type="checkbox" checked />
+              ノイズ付加前の基準データも生成する
+            </label>
+
+            <!-- 信号ごとの設定 -->
+            <h3 class="peak-heading">生成するデータ列</h3>
+
+            <div
+              class="table-scroll"
+              tabindex="0"
+              role="region"
+              aria-label="人工データの列設定"
+            >
+              <table id="generator-table">
+                <thead>
+                  <tr>
+                    <th>列名</th>
+                    <th>波形</th>
+                    <th>振幅・傾き</th>
+                    <th>周波数（Hz）</th>
+                    <th>オフセット</th>
+                    <th>位相（周期）</th>
+                    <th>ピーク時刻（s）</th>
+                    <th>ピーク幅σ（s）</th>
+                    <th>ノイズ強度</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+
+                <tbody id="generator-rows"></tbody>
+              </table>
+            </div>
+
+            <p class="analysis-note">
+              波形に必要な設定項目だけが有効になります。
+              直線トレンドの振幅は1秒あたりの変化量、 ランダムウォークの振幅は
+              1サンプルあたりの最大変化量です。
+            </p>
+
+            <div class="button-row">
+              <button id="generator-add" type="button" class="secondary">
+                データ列を追加
+              </button>
+
+              <button id="generator-run" type="button">人工データを生成</button>
+            </div>
+
+            <p id="generator-info" class="analysis-note">
+              最大12信号・100000行・50万セル
+            </p>
+          </details>
+        </section>
+
         <!-- 相関分析 -->
         <section class="panel">
           <h2>相関分析</h2>

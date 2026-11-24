@@ -1,3 +1,5 @@
+import { WAVEFORMS, generateDataset } from "./generator.js";
+
 import { pairedValues, correlation, correlationMatrix } from "./correlation.js";
 
 import { detectPeaks, peakIntervals } from "./peaks.js";
@@ -64,6 +66,9 @@ let correlationResult = null;
 
 // 相関行列の最大項目数
 const correlationColumnLimit = 40;
+
+// 人工データの列名を生成するための番号
+let generatorSerial = 0;
 
 /* ========================================
    共通処理
@@ -2059,6 +2064,279 @@ function runCorrelation() {
   }
 }
 
+/* ========================================
+   人工データ生成
+======================================== */
+
+// データ列の追加・削除ボタンを更新する
+function refreshGeneratorControls() {
+  const rows = $("generator-rows").rows;
+
+  $("generator-add").disabled = rows.length >= 12;
+
+  for (const row of rows) {
+    const button = row.querySelector("[data-remove-signal]");
+
+    button.disabled = rows.length <= 1;
+  }
+}
+
+// 波形によって必要な入力欄を切り替える
+function updateGeneratorRow(row) {
+  const field = (key) => row.querySelector(`[data-key="${key}"]`);
+
+  const type = field("type").value;
+
+  const periodic = ["sine", "square", "triangle", "peaks"].includes(type);
+
+  field("frequency").disabled = !periodic;
+
+  field("phase").disabled = !periodic;
+
+  field("center").disabled = type !== "pulse";
+
+  field("width").disabled = !["pulse", "peaks"].includes(type);
+}
+
+// 信号ごとの設定行を追加する
+function addGeneratorRow(config = {}) {
+  const body = $("generator-rows");
+
+  if (body.rows.length >= 12) return;
+
+  generatorSerial++;
+
+  const defaults = {
+    name: `signal_${generatorSerial}`,
+
+    type: "sine",
+
+    amplitude: 1,
+
+    frequency: 1,
+
+    offset: 0,
+
+    phase: 0,
+
+    center: 2,
+
+    width: 0.05,
+
+    noise: 0.1,
+
+    ...config,
+  };
+
+  const row = body.insertRow();
+
+  // 入力欄を生成する補助関数
+  function addInput(key, label, type = "number") {
+    const input = document.createElement("input");
+
+    input.type = type;
+
+    input.dataset.key = key;
+
+    input.value = defaults[key];
+
+    input.setAttribute("aria-label", label);
+
+    if (type === "number") {
+      input.step = "any";
+    }
+
+    row.insertCell().append(input);
+
+    return input;
+  }
+
+  // 列名
+  addInput("name", "列名", "text");
+
+  // 波形の選択肢
+  const waveform = document.createElement("select");
+
+  waveform.dataset.key = "type";
+
+  waveform.setAttribute("aria-label", "波形");
+
+  for (const [value, label] of WAVEFORMS) {
+    waveform.append(option(value, label));
+  }
+
+  waveform.value = defaults.type;
+
+  row.insertCell().append(waveform);
+
+  // 数値設定欄
+  addInput("amplitude", "振幅・傾き");
+
+  addInput("frequency", "周波数");
+
+  addInput("offset", "オフセット");
+
+  addInput("phase", "位相");
+
+  addInput("center", "ピーク時刻");
+
+  addInput("width", "ピーク幅");
+
+  addInput("noise", "ノイズ強度");
+
+  // 設定行の削除ボタン
+  const remove = document.createElement("button");
+
+  remove.type = "button";
+
+  remove.className = "secondary";
+
+  remove.dataset.removeSignal = "";
+
+  remove.textContent = "削除";
+
+  remove.addEventListener("click", () => {
+    if (body.rows.length <= 1) return;
+
+    row.remove();
+
+    refreshGeneratorControls();
+  });
+
+  row.insertCell().append(remove);
+
+  // 波形変更時に設定欄を更新する
+  waveform.addEventListener("change", () => {
+    updateGeneratorRow(row);
+  });
+
+  updateGeneratorRow(row);
+
+  refreshGeneratorControls();
+}
+
+// 入力欄から信号の設定を取得する
+function readGeneratorSignals() {
+  return Array.from(
+    $("generator-rows").rows,
+
+    (row) => {
+      const field = (key) => row.querySelector(`[data-key="${key}"]`);
+
+      return {
+        name: field("name").value,
+
+        type: field("type").value,
+
+        amplitude: field("amplitude").valueAsNumber,
+
+        frequency: field("frequency").valueAsNumber,
+
+        offset: field("offset").valueAsNumber,
+
+        phase: field("phase").valueAsNumber,
+
+        center: field("center").valueAsNumber,
+
+        width: field("width").valueAsNumber,
+
+        noise: field("noise").valueAsNumber,
+      };
+    },
+  );
+}
+
+// 人工データを生成して登録する
+function runGenerator() {
+  const info = $("generator-info");
+
+  if (busy) return;
+
+  try {
+    // 共通設定の取得
+    const duration = $("generator-duration").valueAsNumber;
+
+    const rate = $("generator-rate").valueAsNumber;
+
+    const jitter = $("generator-jitter").valueAsNumber / 100;
+
+    const missingRate = $("generator-missing").valueAsNumber / 100;
+
+    const seed = $("generator-seed").valueAsNumber;
+
+    const noiseKind = $("generator-noise-kind").value;
+
+    const includeReference = $("generator-reference").checked;
+
+    // 項目ごとの生成条件
+    const signals = readGeneratorSignals();
+
+    // 人工CSVを生成
+    const result = generateDataset({
+      duration,
+
+      rate,
+
+      jitter,
+
+      missingRate,
+
+      seed,
+
+      noiseKind,
+
+      includeReference,
+
+      signals,
+    });
+
+    // 既存のCSV登録機能を利用する
+    const name = `synthetic_seed_${seed}.csv`;
+
+    register(name, result.csv, ",");
+
+    // 人工データの横軸は秒単位と分かっているため
+    // 自動的に設定する
+    manager.setAxis(activeId, {
+      kind: "numeric",
+
+      column: "time_s",
+
+      unit: "s",
+    });
+
+    // 測定データのみを初期表示する
+    // 全欠損列はCSV解析上の数値列にならないため除く
+    const dataset = current();
+
+    const available = new Set(numericColumns(dataset).map((c) => c.name));
+
+    const selected = result.measuredNames.filter((name) => available.has(name));
+
+    selections.set(activeId, new Set(selected));
+
+    // 既存の画面更新処理を使用する
+    render();
+
+    info.textContent =
+      `${result.rowCount.toLocaleString()} 行 / ` +
+      `${result.headers.length} 列を生成しました。\n` +
+      `測定時間：${result.duration} 秒 / ` +
+      `シード：${seed}`;
+
+    if (!selected.length) {
+      info.textContent +=
+        "\n有効な測定値がありません。" + "欠損確率などを確認してください。";
+    }
+
+    status(`人工データ「${name}」を生成しました。`);
+  } catch (error) {
+    info.textContent = error.message;
+
+    status(error.message, true);
+  }
+}
+
 /**
  * 選択された項目のグラフを表示する
  */
@@ -2643,5 +2921,55 @@ for (const id of ["correlation-method", "correlation-scope"]) {
 for (const id of ["scatter-x", "scatter-y"]) {
   $(id).addEventListener("change", renderScatter);
 }
+
+/* ========================================
+   人工データ生成の操作イベント
+======================================== */
+
+// 信号の追加
+$("generator-add").addEventListener(
+  "click",
+
+  () => addGeneratorRow(),
+);
+
+// データ生成
+$("generator-run").addEventListener(
+  "click",
+
+  runGenerator,
+);
+
+/* ========================================
+   人工データ生成の初期設定
+======================================== */
+
+// 初期信号1：正弦波
+addGeneratorRow({
+  name: "signal_1",
+
+  type: "sine",
+
+  amplitude: 1,
+
+  frequency: 2,
+
+  noise: 0.15,
+});
+
+// 初期信号2：周期ピーク
+addGeneratorRow({
+  name: "signal_2",
+
+  type: "peaks",
+
+  amplitude: 2,
+
+  frequency: 1,
+
+  width: 0.05,
+
+  noise: 0.1,
+});
 
 render();
