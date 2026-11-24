@@ -306,6 +306,192 @@
 
       </section>
       
+      <!-- データ変換 -->
+      <section class="panel">
+
+        <h2>データ変換・演算</h2>
+
+        <fieldset id="transform-settings" disabled>
+
+          <div class="analysis-controls">
+
+            <!-- 変換処理の種類 -->
+            <div class="analysis-field">
+
+              <label for="transform-method">
+                処理の種類
+              </label>
+
+              <select id="transform-method">
+
+                <option value="difference">
+                  Nサンプル差分
+                </option>
+
+                <option value="derivative">
+                  時間微分
+                </option>
+
+                <option value="absolute">
+                  絶対値
+                </option>
+
+                <option value="constant">
+                  定数との四則演算
+                </option>
+
+                <option value="binary">
+                  データ列同士の四則演算
+                </option>
+
+                <option value="magnitude">
+                  ベクトルの大きさ
+                </option>
+
+                <option value="minmax">
+                  Min-Max正規化
+                </option>
+
+                <option value="zscore">
+                  Z-score標準化
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <!-- 差分サンプル数 -->
+            <div
+              id="transform-lag-field"
+              class="analysis-field"
+            >
+
+              <label for="transform-lag">
+                差分サンプル数 N
+              </label>
+
+              <input
+                id="transform-lag"
+                type="number"
+                min="1"
+                step="1"
+                value="1"
+              >
+
+            </div>
+
+
+            <!-- 演算子 -->
+            <div
+              id="transform-operator-field"
+              class="analysis-field"
+              hidden
+            >
+
+              <label for="transform-operator">
+                演算方法
+              </label>
+
+              <select id="transform-operator">
+
+                <option value="add">加算（＋）</option>
+
+                <option value="subtract">減算（−）</option>
+
+                <option value="multiply">乗算（×）</option>
+
+                <option value="divide">除算（÷）</option>
+
+              </select>
+
+            </div>
+
+
+            <!-- 定数 -->
+            <div
+              id="transform-constant-field"
+              class="analysis-field"
+              hidden
+            >
+
+              <label for="transform-constant">
+                定数
+              </label>
+
+              <input
+                id="transform-constant"
+                type="number"
+                step="any"
+                value="1"
+              >
+
+            </div>
+
+
+            <!-- データ列A -->
+            <div
+              id="transform-a-field"
+              class="analysis-field"
+              hidden
+            >
+
+              <label for="transform-a">
+                データ列 A
+              </label>
+
+              <select id="transform-a"></select>
+
+            </div>
+
+
+            <!-- データ列B -->
+            <div
+              id="transform-b-field"
+              class="analysis-field"
+              hidden
+            >
+
+              <label for="transform-b">
+                データ列 B
+              </label>
+
+              <select id="transform-b"></select>
+
+            </div>
+
+          </div>
+
+
+          <button
+            id="apply-transform"
+            type="button"
+            disabled
+          >
+            データ変換を実行
+          </button>
+
+
+          <p
+            id="transform-info"
+            class="analysis-note"
+          >
+            データを読み込んでください。
+          </p>
+
+
+          <p class="analysis-note">
+
+            加工結果は新しい列として保存されます。
+            元データは変更されません。
+            時間微分には秒単位の横軸が必要です。
+
+          </p>
+
+        </fieldset>
+
+      </section>
+
       <!-- フィルタ処理 -->
       <section class="panel">
 
