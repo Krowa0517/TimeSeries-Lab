@@ -1,3 +1,4 @@
+import { setupWorkspace } from "./ui.js";
 import { evaluateAccuracy, benchmarkCase } from "./evaluation.js";
 
 import {
@@ -51,6 +52,7 @@ let busy = false;
 
 // HTML要素を取得する補助関数
 const $ = (id) => document.getElementById(id);
+const workspaceUI = setupWorkspace();
 // グラフ描画オブジェクト
 const chart = new TimeSeriesChart($("chart-area"));
 // 統計量の再計算タイマー
@@ -252,9 +254,12 @@ function renderColumns(dataset) {
       label.append(tag);
     }
 
+    label.dataset.columnName = column.name;
+    label.dataset.columnType = column.derived ? "derived" : "original";
     list.append(label);
   }
 
+  workspaceUI.refreshColumns();
   renderSelection();
 }
 
