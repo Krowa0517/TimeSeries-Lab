@@ -582,7 +582,18 @@
           <p id="scatter-info" class="analysis-note">
             相関分析を実行してください。
           </p>
-
+          <div class="scatter-size-control">
+            <label for="scatter-size">散布図の表示幅</label>
+            <input
+              id="scatter-size"
+              type="range"
+              min="320"
+              max="1200"
+              step="40"
+              value="640"
+            />
+            <output id="scatter-size-value" for="scatter-size">640 px</output>
+          </div>
           <div id="scatter-area" class="scatter-area">散布図の表示領域</div>
 
           <p class="analysis-note">

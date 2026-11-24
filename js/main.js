@@ -3700,6 +3700,20 @@ for (const id of ["correlation-method", "correlation-scope"]) {
 for (const id of ["scatter-x", "scatter-y"]) {
   $(id).addEventListener("change", renderScatter);
 }
+// 散布図の表示サイズを変更
+function updateScatterSize() {
+  const size = $("scatter-size").valueAsNumber;
+
+  $("scatter-area").style.setProperty("--scatter-width", `${size}px`);
+
+  $("scatter-size-value").value = `${size} px`;
+}
+
+// スライダー操作時に表示サイズを更新
+$("scatter-size").addEventListener("input", updateScatterSize);
+
+// 初期サイズを適用
+updateScatterSize();
 
 /* ========================================
    人工データ生成の操作イベント
