@@ -395,6 +395,9 @@ export class TimeSeriesChart {
 
     this.cursor = null;
 
+    // 分析範囲の変更を通知する
+    this.onViewChange?.();
+
     this.schedule();
   }
 
@@ -444,28 +447,32 @@ export class TimeSeriesChart {
   // 超えないように調整する
   clampView(start, span) {
 
-    const [lo, hi] = this.full;
+  const [lo, hi] = this.full;
 
-    const total = hi - lo;
+  const total = hi - lo;
 
-    span = Math.max(
+  span = Math.max(
 
-      total / 10000,
+    total / 10000,
 
-      Math.min(total, span)
-    );
+    Math.min(total, span)
+  );
 
-    start = Math.max(
+  start = Math.max(
 
-      lo,
+    lo,
 
-      Math.min(hi - span, start)
-    );
+    Math.min(hi - span, start)
+  );
 
-    this.view = [
-      start,
-      start + span
-    ];
+  this.view = [
+    start,
+    start + span
+  ];
+
+
+  // 分析範囲の変更を通知する
+  this.onViewChange?.();
   }
 
 

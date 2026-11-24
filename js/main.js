@@ -3,6 +3,16 @@ import { DatasetManager } from './dataset.js';
 
 import { TimeSeriesChart } from './chart.js';
 
+import {
+
+  summarize,
+
+  compareErrors,
+
+  rangeIndices
+
+} from './statistics.js';
+
 
 /* ========================================
    アプリケーションの状態管理
@@ -26,6 +36,11 @@ const $ = id => document.getElementById(id);
 const chart = new TimeSeriesChart(
   $('chart-area')
 );
+// 統計量の再計算タイマー
+let statisticsTimer = null;
+
+// グラフの表示範囲が変化した場合
+chart.onViewChange = scheduleStatistics;
 
 // プレビューする最大行数
 const previewLimit = 12;
@@ -307,6 +322,492 @@ function renderColumns(dataset) {
 
 
 
+/* ========================================
+   統計分析
+======================================== */
+
+// 統計量を表示用の文字列に変換する
+function formatStatistic(value) {
+
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
+
+  return Number(
+    value.toPrecision(7)
+  ).toString();
+}
+
+
+// テーブルに結果を追加する
+function appendAnalysisRow(body, values) {
+
+  const row = body.insertRow();
+
+  for (const value of values) {
+
+    const cell = row.insertCell();
+
+    cell.textContent = String(value);
+  }
+}
+
+
+// 分析範囲を取得する
+function getAnalysisRange(dataset) {
+
+  // 全区間の場合
+  if ($('stats-scope').value === 'all') {
+
+    return [
+      0,
+      dataset.rowCount
+    ];
+  }
+
+
+  // グラフの表示区間の場合
+  return rangeIndices(
+
+    dataset.axis.values,
+
+    chart.view[0],
+
+    chart.view[1]
+  );
+}
+
+
+// データセット変更時に
+// 誤差分析の選択肢を更新する
+function refreshStatisticsControls() {
+
+  const dataset = current();
+
+  const columns = dataset
+    ? numericColumns(dataset)
+    : [];
+
+
+  const measured =
+    $('error-measured');
+
+  const reference =
+    $('reference-column');
+
+
+  // 以前の選択状態を取得する
+  const previousMeasured = measured.value;
+
+  const previousReference = reference.value;
+
+
+  // 選択可能な項目を生成する
+  measured.replaceChildren(
+
+    ...columns.map(
+      c => option(c.name, c.name)
+    )
+  );
+
+
+  reference.replaceChildren(
+
+    ...columns.map(
+      c => option(c.name, c.name)
+    )
+  );
+
+
+  // 元の選択項目が存在すれば維持する
+  if (
+
+    columns.some(
+      c => c.name === previousMeasured
+    )
+
+  ) {
+
+    measured.value = previousMeasured;
+
+  } else if (dataset) {
+
+    const first = columns.find(
+
+      c =>
+
+        c.name !== dataset.axis.column &&
+
+        !dataset.timeCandidates.includes(
+          c.name
+        )
+    );
+
+    if (first) {
+      measured.value = first.name;
+    }
+  }
+
+
+  if (
+
+    columns.some(
+      c => c.name === previousReference
+    )
+
+  ) {
+
+    reference.value = previousReference;
+
+  } else {
+
+    const other = columns.find(
+      c => c.name !== measured.value
+    );
+
+    if (other) {
+      reference.value = other.name;
+    }
+  }
+
+
+  $('error-settings').disabled =
+    !columns.length;
+}
+
+
+// 誤差分析の結果を表示する
+function renderErrorAnalysis(
+  dataset,
+  start,
+  end
+) {
+
+  const body =
+    $('error-table').tBodies[0];
+
+  body.replaceChildren();
+
+
+  const info = $('error-info');
+
+
+  const mode =
+    $('reference-mode').value;
+
+
+  // 基準値の形式に応じて入力欄を切り替える
+  $('reference-value-field').hidden =
+    mode !== 'constant';
+
+  $('reference-column-field').hidden =
+    mode !== 'column';
+
+
+  if (
+    !dataset ||
+    !numericColumns(dataset).length
+  ) {
+
+    info.textContent =
+      '分析可能な数値列がありません。';
+
+    return;
+  }
+
+
+  try {
+
+    const measuredName =
+      $('error-measured').value;
+
+
+    const measured = manager.getColumn(
+
+      dataset.id,
+
+      measuredName
+
+    ).values.slice(start, end);
+
+
+    let reference;
+
+    let referenceLabel;
+
+
+    // 一定の基準値を使用する場合
+    if (mode === 'constant') {
+
+      const input =
+        $('reference-value');
+
+
+      if (input.value.trim() === '') {
+
+        info.textContent =
+          '基準値を入力してください。';
+
+        return;
+      }
+
+
+      reference = input.valueAsNumber;
+
+      if (!Number.isFinite(reference)) {
+
+        throw new Error(
+          '有効な基準値を入力してください。'
+        );
+      }
+
+      referenceLabel =
+        String(reference);
+
+
+    // 別のデータ列を基準とする場合
+    } else {
+
+      referenceLabel =
+        $('reference-column').value;
+
+
+      reference = manager.getColumn(
+
+        dataset.id,
+
+        referenceLabel
+
+      ).values.slice(start, end);
+    }
+
+
+    // 誤差を計算する
+    const result = compareErrors(
+
+      measured,
+
+      reference
+    );
+
+
+    appendAnalysisRow(body, [
+
+      result.validCount,
+
+      result.excludedCount,
+
+      formatStatistic(result.meanError),
+
+      formatStatistic(result.mae),
+
+      formatStatistic(result.mse),
+
+      formatStatistic(result.rmse)
+    ]);
+
+
+    info.textContent =
+
+      `${measuredName} − ${referenceLabel}` +
+
+      ` / ${result.count} サンプル` +
+
+      (
+        result.validCount === 0
+
+          ? '（有効なデータの組がありません）'
+
+          : ''
+      );
+
+  } catch (error) {
+
+    info.textContent =
+      error.message;
+  }
+}
+
+
+// 基本統計量と誤差分析を更新する
+function renderStatistics() {
+
+  // 予約されていた処理を解除する
+  clearTimeout(statisticsTimer);
+
+  statisticsTimer = null;
+
+
+  const body =
+    $('stats-table').tBodies[0];
+
+  body.replaceChildren();
+
+
+  $('error-table')
+    .tBodies[0]
+    .replaceChildren();
+
+
+  const dataset = current();
+
+
+  if (!dataset) {
+
+    $('stats-info').textContent =
+      'データ未読み込み';
+
+    renderErrorAnalysis(null, 0, 0);
+
+    return;
+  }
+
+
+  const selected =
+    selections.get(dataset.id);
+
+
+  // 表示区間の分析には
+  // グラフが存在する必要がある
+  if (
+
+    $('stats-scope').value === 'visible' &&
+
+    selected.size === 0
+
+  ) {
+
+    $('stats-info').textContent =
+      'グラフの表示項目を選択してください。';
+
+    $('error-info').textContent =
+      '分析範囲を設定してください。';
+
+    return;
+  }
+
+
+  const [start, end] =
+    getAnalysisRange(dataset);
+
+
+  // 分析対象のサンプル数
+  $('stats-info').textContent =
+
+    `${end - start} / ` +
+
+    `${dataset.rowCount} サンプル`;
+
+
+  const warnings = [];
+
+
+  // 選択された項目を順番に分析する
+  for (const name of selected) {
+
+    try {
+
+      const values = manager.getColumn(
+
+        dataset.id,
+
+        name
+
+      ).values.slice(start, end);
+
+
+      const s = summarize(values);
+
+
+      appendAnalysisRow(body, [
+
+        name,
+
+        s.count,
+
+        s.validCount,
+
+        s.missingCount,
+
+        s.missingRate === null
+
+          ? '—'
+
+          : (
+              s.missingRate * 100
+            ).toFixed(2) + '%',
+
+        formatStatistic(s.mean),
+
+        formatStatistic(s.median),
+
+        formatStatistic(s.min),
+
+        formatStatistic(s.max),
+
+        formatStatistic(s.range),
+
+        formatStatistic(s.variance),
+
+        formatStatistic(s.stdDev),
+
+        formatStatistic(s.q1),
+
+        formatStatistic(s.q3)
+      ]);
+
+    } catch (error) {
+
+      warnings.push(
+        `${name}: ${error.message}`
+      );
+    }
+  }
+
+
+  if (warnings.length) {
+
+    $('stats-info').textContent +=
+
+      ' / ' + warnings.join('、');
+  }
+
+
+  // 誤差分析にも同じ分析範囲を適用する
+  renderErrorAnalysis(
+
+    dataset,
+
+    start,
+
+    end
+  );
+}
+
+
+// グラフ操作時の統計再計算を予約する
+function scheduleStatistics() {
+
+  // 全区間分析の場合は
+  // グラフを移動しても再計算しない
+  if ($('stats-scope').value !== 'visible') {
+
+    return;
+  }
+
+
+  clearTimeout(statisticsTimer);
+
+
+  // グラフ操作が落ち着いてから再計算する
+  statisticsTimer = setTimeout(
+
+    renderStatistics,
+
+    120
+  );
+}
+
 /**
  * 選択された項目のグラフを表示する
  */
@@ -365,6 +866,9 @@ function renderSelection() {
       normalized
     }
   );
+
+  // 統計量も更新する
+  renderStatistics();
 }
 
 
@@ -582,6 +1086,9 @@ function render() {
 
 
   // 表示項目とプレビューを更新
+  // 統計分析用の選択肢を更新する
+  refreshStatisticsControls();
+
   renderColumns(dataset);
 
   renderPreview(dataset);
@@ -1008,6 +1515,55 @@ $('reset-chart').addEventListener(
 
     chart.resetView();
   }
+);
+
+
+/* ========================================
+   統計分析の操作イベント
+======================================== */
+
+// 分析範囲の変更
+$('stats-scope').addEventListener(
+
+  'change',
+
+  renderStatistics
+);
+
+
+// 測定対象の変更
+$('error-measured').addEventListener(
+
+  'change',
+
+  renderStatistics
+);
+
+
+// 基準値の形式の変更
+$('reference-mode').addEventListener(
+
+  'change',
+
+  renderStatistics
+);
+
+
+// 基準値の変更
+$('reference-value').addEventListener(
+
+  'input',
+
+  renderStatistics
+);
+
+
+// 基準データ列の変更
+$('reference-column').addEventListener(
+
+  'change',
+
+  renderStatistics
 );
 
 render();

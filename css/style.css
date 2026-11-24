@@ -751,3 +751,139 @@ footer {
     padding: 6px;
   }
 }
+
+
+/* ========================================
+   統計分析・誤差分析
+======================================== */
+
+.analysis-controls {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: flex-end;
+
+  gap: 12px;
+
+  margin-bottom: 12px;
+}
+
+
+.analysis-field {
+
+  flex: 1;
+
+  min-width: 150px;
+}
+
+
+.analysis-field label {
+
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+
+.analysis-field input {
+
+  width: 100%;
+
+  padding: 8px 10px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 6px;
+
+  background: var(--control);
+
+  color: var(--text);
+}
+
+
+.analysis-field input:disabled {
+
+  opacity: 0.5;
+}
+
+
+.analysis-field[hidden] {
+
+  display: none;
+}
+
+
+.analysis-note {
+
+  color: var(--muted);
+
+  font-size: 12px;
+
+  margin: 10px 0;
+
+  overflow-wrap: anywhere;
+}
+
+
+#stats-table,
+#error-table {
+
+  font-size: 13px;
+}
+
+
+#stats-table td,
+#error-table td {
+
+  font-variant-numeric: tabular-nums;
+}
+
+
+#stats-table th:not(:first-child),
+#stats-table td:not(:first-child),
+#error-table th,
+#error-table td {
+
+  text-align: right;
+}
+
+
+#stats-table th:first-child,
+#stats-table td:first-child {
+
+  position: sticky;
+
+  left: 0;
+
+  background: var(--panel);
+}
+
+
+#stats-table th:first-child {
+
+  background: var(--control);
+
+  z-index: 1;
+}
+
+
+#stats-table tbody tr:hover,
+#error-table tbody tr:hover {
+
+  background: var(--control);
+}
+
+
+@media (max-width: 780px) {
+
+  .analysis-field {
+
+    min-width: 100%;
+  }
+}

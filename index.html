@@ -223,86 +223,323 @@
         </div>
 
         
-<!-- グラフ表示設定 -->
-<div class="chart-toolbar">
+        <!-- グラフ表示設定 -->
+        <div class="chart-toolbar">
 
-  <div class="chart-control">
+          <div class="chart-control">
 
-    <label for="chart-mode">
-      表示形式
-    </label>
+            <label for="chart-mode">
+              表示形式
+            </label>
 
-    <select id="chart-mode">
+            <select id="chart-mode">
 
-      <option value="overlay">
-        重ね合わせ表示
-      </option>
+              <option value="overlay">
+                重ね合わせ表示
+              </option>
 
-      <option value="separate">
-        個別グラフ表示
-      </option>
+              <option value="separate">
+                個別グラフ表示
+              </option>
 
-    </select>
+            </select>
 
-  </div>
-
-
-  <div class="chart-control">
-
-    <label for="chart-scale">
-      縦軸の表示
-    </label>
-
-    <select id="chart-scale">
-
-      <option value="raw">
-        元の値
-      </option>
-
-      <option value="normalized">
-        Min-Max正規化
-      </option>
-
-    </select>
-
-  </div>
+          </div>
 
 
-  <button
-    id="reset-chart"
-    type="button"
-    class="secondary"
-  >
-    表示範囲をリセット
-  </button>
+          <div class="chart-control">
 
-</div>
+            <label for="chart-scale">
+              縦軸の表示
+            </label>
 
+            <select id="chart-scale">
 
-<p class="chart-help">
+              <option value="raw">
+                元の値
+              </option>
 
-  ホイール：拡大・縮小 ／
-  ドラッグ：移動 ／
-  カーソル：測定値の確認
+              <option value="normalized">
+                Min-Max正規化
+              </option>
 
-</p>
+            </select>
 
-
-<p class="chart-help">
-
-  異なる単位の項目を比較する場合は、
-  個別表示または正規化を推奨します。
-
-</p>
+          </div>
 
 
-<!-- グラフ描画領域 -->
-<div id="chart-area" class="chart-area">
+          <button
+            id="reset-chart"
+            type="button"
+            class="secondary"
+          >
+            表示範囲をリセット
+          </button>
 
-  表示する数値列を選択してください。
+        </div>
 
-</div>
 
+        <p class="chart-help">
+
+          ホイール：拡大・縮小 ／
+          ドラッグ：移動 ／
+          カーソル：測定値の確認
+
+        </p>
+
+
+        <p class="chart-help">
+
+          異なる単位の項目を比較する場合は、
+          個別表示または正規化を推奨します。
+
+        </p>
+
+
+        <!-- グラフ描画領域 -->
+        <div id="chart-area" class="chart-area">
+
+          表示する数値列を選択してください。
+
+        </div>
+
+
+      </section>
+
+      <!-- 基本統計分析 -->
+      <section class="panel">
+
+        <div class="section-heading">
+
+          <h2>基本統計量</h2>
+
+          <span id="stats-info" class="muted">
+            データ未読み込み
+          </span>
+
+        </div>
+
+
+        <div class="analysis-controls">
+
+          <div class="analysis-field">
+
+            <label for="stats-scope">
+              分析範囲
+            </label>
+
+            <select id="stats-scope">
+
+              <option value="all">
+                全区間
+              </option>
+
+              <option value="visible">
+                グラフの表示区間
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+        <p class="analysis-note">
+
+          分散・標準偏差は母分散に基づきます。
+          欠損値は計算から除外します。
+          正規化表示中も元の数値を分析します。
+
+        </p>
+
+
+        <div
+          class="table-scroll"
+          tabindex="0"
+          role="region"
+          aria-label="基本統計量"
+        >
+
+          <table id="stats-table">
+
+            <thead>
+
+              <tr>
+
+                <th>項目</th>
+
+                <th>データ数</th>
+
+                <th>有効数</th>
+
+                <th>欠損数</th>
+
+                <th>欠損率</th>
+
+                <th>平均値</th>
+
+                <th>中央値</th>
+
+                <th>最小値</th>
+
+                <th>最大値</th>
+
+                <th>範囲</th>
+
+                <th>分散</th>
+
+                <th>標準偏差</th>
+
+                <th>第1四分位数</th>
+
+                <th>第3四分位数</th>
+
+              </tr>
+
+            </thead>
+
+            <tbody></tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- 誤差分析 -->
+      <section class="panel">
+
+        <h2>誤差分析</h2>
+
+
+        <fieldset id="error-settings" disabled>
+
+          <div class="analysis-controls">
+
+            <div class="analysis-field">
+
+              <label for="error-measured">
+                測定値の項目
+              </label>
+
+              <select id="error-measured">
+              </select>
+
+            </div>
+
+
+            <div class="analysis-field">
+
+              <label for="reference-mode">
+                基準値の形式
+              </label>
+
+              <select id="reference-mode">
+
+                <option value="constant">
+                  一定の数値
+                </option>
+
+                <option value="column">
+                  別のデータ列
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div
+              id="reference-value-field"
+              class="analysis-field"
+            >
+
+              <label for="reference-value">
+                基準値
+              </label>
+
+              <input
+                id="reference-value"
+                type="number"
+                step="any"
+                placeholder="基準値を入力"
+              >
+
+            </div>
+
+
+            <div
+              id="reference-column-field"
+              class="analysis-field"
+              hidden
+            >
+
+              <label for="reference-column">
+                基準データ列
+              </label>
+
+              <select id="reference-column">
+              </select>
+
+            </div>
+
+          </div>
+
+        </fieldset>
+
+
+        <p id="error-info" class="analysis-note">
+
+          データを読み込んでください。
+
+        </p>
+
+
+        <div
+          class="table-scroll"
+          tabindex="0"
+          role="region"
+          aria-label="誤差分析結果"
+        >
+
+          <table id="error-table">
+
+            <thead>
+
+              <tr>
+
+                <th>有効データ数</th>
+
+                <th>除外数</th>
+
+                <th>平均誤差</th>
+
+                <th>MAE</th>
+
+                <th>MSE</th>
+
+                <th>RMSE</th>
+
+              </tr>
+
+            </thead>
+
+            <tbody></tbody>
+
+          </table>
+
+        </div>
+
+
+        <p class="analysis-note">
+
+          誤差 = 測定値 − 基準値。
+          比較する項目の単位は統一してください。
+
+        </p>
 
       </section>
 
