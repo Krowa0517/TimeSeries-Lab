@@ -1,3 +1,5 @@
+import { evaluateAccuracy, benchmarkCase } from "./evaluation.js";
+
 import {
   toCSV,
   datasetRows,
@@ -2959,6 +2961,154 @@ async function runExport() {
   }
 }
 
+/* ========================================
+   精度・性能評価
+======================================== */
+
+async function runEvaluation() {
+  const button = $("evaluation-run");
+
+  const info = $("evaluation-info");
+
+  if (button.disabled) return;
+
+  button.disabled = true;
+
+  info.textContent = "評価を実行しています。";
+
+  // 古い評価結果を消去する
+  const filterBody = $("evaluation-filter-table").tBodies[0];
+
+  const accuracyBody = $("evaluation-accuracy-table").tBodies[0];
+
+  const timeBody = $("evaluation-time-table").tBodies[0];
+
+  filterBody.replaceChildren();
+
+  accuracyBody.replaceChildren();
+
+  timeBody.replaceChildren();
+
+  try {
+    const rows = Number($("evaluation-size").value);
+
+    // 評価開始メッセージの描画機会を設ける
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
+    });
+
+    /* ====================================
+       精度評価
+    ==================================== */
+
+    const accuracy = evaluateAccuracy(12345);
+
+    // フィルタ処理の誤差
+    for (const f of accuracy.filters) {
+      appendAnalysisRow(filterBody, [
+        f.method,
+
+        f.validCount,
+
+        formatStatistic(f.meanError),
+
+        formatStatistic(f.mae),
+
+        formatStatistic(f.rmse),
+      ]);
+    }
+
+    // 時間微分の精度
+    appendAnalysisRow(accuracyBody, [
+      "時間微分 RMSE",
+
+      formatStatistic(accuracy.differentiation.rmse),
+
+      "約0",
+    ]);
+
+    // ピーク検出の精度
+    const p = accuracy.peaks;
+
+    const peakMetrics = [
+      ["TP", p.tp, 3],
+
+      ["FP", p.fp, 0],
+
+      ["FN", p.fn, 0],
+
+      ["Precision", p.precision, 1],
+
+      ["Recall", p.recall, 1],
+
+      ["F1-score", p.f1, 1],
+
+      ["ピーク時刻 MAE（秒）", p.timeMAE, 0],
+    ];
+
+    for (const [name, value, expected] of peakMetrics) {
+      appendAnalysisRow(accuracyBody, [name, formatStatistic(value), expected]);
+    }
+
+    // 相関分析の精度
+    const c = accuracy.correlation;
+
+    appendAnalysisRow(accuracyBody, [
+      "Pearson",
+
+      formatStatistic(c.pearson),
+
+      c.expectedPearson,
+    ]);
+
+    appendAnalysisRow(accuracyBody, [
+      "Spearman",
+
+      formatStatistic(c.spearman),
+
+      c.expectedSpearman,
+    ]);
+
+    /* ====================================
+       処理時間の評価
+    ==================================== */
+
+    const timings = benchmarkCase(
+      rows,
+
+      4,
+
+      5,
+    );
+
+    for (const t of timings) {
+      appendAnalysisRow(timeBody, [
+        t.operation,
+
+        t.medianMs.toFixed(3),
+
+        t.minMs.toFixed(3),
+
+        t.maxMs.toFixed(3),
+      ]);
+    }
+
+    info.textContent =
+      `評価完了：${rows.toLocaleString()} 行 / ` +
+      "4信号 / シード12345 / 5回計測";
+
+    status("精度・性能評価が完了しました。");
+  } catch (error) {
+    info.textContent = error.message;
+
+    status(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 /**
  * 選択された項目のグラフを表示する
  */
@@ -3605,5 +3755,11 @@ $("export-kind").addEventListener("change", refreshExportControls);
 
 // ファイル出力
 $("export-run").addEventListener("click", runExport);
+
+/* ========================================
+   精度・性能評価の操作イベント
+======================================== */
+
+$("evaluation-run").addEventListener("click", runEvaluation);
 
 render();

@@ -189,6 +189,96 @@
           </div>
         </section>
 
+        <!-- 精度・性能評価 -->
+        <section class="panel">
+          <details class="generator-panel">
+            <summary>精度・性能評価</summary>
+
+            <p class="analysis-note">
+              人工データを使用して分析精度と処理時間を評価します。
+              現在のデータセットは変更されません。
+            </p>
+
+            <div class="analysis-controls">
+              <div class="analysis-field">
+                <label for="evaluation-size"> ベンチマークのデータ数 </label>
+
+                <select id="evaluation-size">
+                  <option value="1000">1,000サンプル</option>
+
+                  <option value="10000">10,000サンプル</option>
+                </select>
+              </div>
+            </div>
+
+            <button id="evaluation-run" type="button">
+              精度・性能評価を実行
+            </button>
+
+            <p id="evaluation-info" class="analysis-note">
+              評価を実行してください。
+            </p>
+
+            <h3 class="peak-heading">フィルタ処理の精度評価</h3>
+
+            <div class="table-scroll">
+              <table id="evaluation-filter-table">
+                <thead>
+                  <tr>
+                    <th>手法</th>
+                    <th>有効数</th>
+                    <th>平均誤差</th>
+                    <th>MAE</th>
+                    <th>RMSE</th>
+                  </tr>
+                </thead>
+
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <h3 class="peak-heading">アルゴリズムの精度評価</h3>
+
+            <div class="table-scroll">
+              <table id="evaluation-accuracy-table">
+                <thead>
+                  <tr>
+                    <th>評価項目</th>
+                    <th>計算結果</th>
+                    <th>期待値</th>
+                  </tr>
+                </thead>
+
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <h3 class="peak-heading">処理時間の評価</h3>
+
+            <div class="table-scroll">
+              <table id="evaluation-time-table">
+                <thead>
+                  <tr>
+                    <th>処理</th>
+                    <th>中央値（ms）</th>
+                    <th>最小値（ms）</th>
+                    <th>最大値（ms）</th>
+                  </tr>
+                </thead>
+
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <p class="analysis-note">
+              信号数4列、ウォームアップ1回、計測5回。
+              CSV解析には時刻列も含まれます。
+              描画時間やファイル入出力時間は含みません。
+              評価中は画面操作が一時的に停止することがあります。
+            </p>
+          </details>
+        </section>
+
         <!-- データ・分析結果の出力 -->
         <section class="panel">
           <details>
