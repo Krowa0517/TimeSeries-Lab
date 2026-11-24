@@ -1,3 +1,11 @@
+import {
+  toCSV,
+  datasetRows,
+  outputFilename,
+  downloadBlob,
+  chartPNG,
+} from "./export.js";
+
 import { WAVEFORMS, generateDataset } from "./generator.js";
 
 import { pairedValues, correlation, correlationMatrix } from "./correlation.js";
@@ -69,6 +77,9 @@ const correlationColumnLimit = 40;
 
 // 人工データの列名を生成するための番号
 let generatorSerial = 0;
+
+// 出力用のピーク検出結果
+let peakExportSnapshot = null;
 
 /* ========================================
    共通処理
@@ -1181,12 +1192,14 @@ function peakDirectionLabel(direction) {
 }
 
 // 検出結果を消去する
+
 function clearPeakResults(message = "検出条件を設定してください。") {
+  peakExportSnapshot = null;
+
   $("peak-table").tBodies[0].replaceChildren();
 
   $("peak-summary-table").tBodies[0].replaceChildren();
 
-  // グラフ上のマーカーも削除する
   chart.setPeakMarkers();
 
   $("peak-info").textContent = message;
@@ -1498,6 +1511,48 @@ function runPeakDetection() {
       `検出範囲：${rangeLabel} / ` +
       `横軸：${dataset.axis.label}` +
       (total > displayLimit ? `（一覧は先頭${displayLimit}件まで表示）` : "");
+
+    // 出力用に全検出結果と実行条件を保持する
+    peakExportSnapshot = {
+      datasetId: dataset.id,
+
+      results,
+
+      summaries,
+
+      start,
+
+      end,
+
+      scope,
+
+      rangeLabel,
+
+      settings: {
+        direction,
+
+        threshold,
+
+        minProminence,
+
+        minDistance,
+
+        distanceUnit,
+
+        individualThresholds: names.map((name) => {
+          const input = peakThresholdInputs.get(name)?.input;
+
+          return {
+            name,
+
+            threshold:
+              input && input.value.trim() !== ""
+                ? input.valueAsNumber
+                : threshold,
+          };
+        }),
+      },
+    };
 
     status(`${total} 件のピークを検出しました。`);
   } catch (error) {
@@ -2034,9 +2089,19 @@ function runCorrelation() {
 
     // 分析結果を保存する
     correlationResult = {
+      datasetId: dataset.id,
+
       columns,
+
       method,
+
       result,
+
+      start,
+
+      end,
+
+      scope,
     };
 
     // ヒートマップと散布図を表示する
@@ -2337,6 +2402,563 @@ function runGenerator() {
   }
 }
 
+/* ========================================
+   ファイル出力
+======================================== */
+
+// 出力画面の状態を更新する
+function refreshExportControls() {
+  const dataset = current();
+
+  const kind = $("export-kind").value;
+
+  const isCSV = !["png", "json"].includes(kind);
+
+  $("export-settings").disabled = !dataset;
+
+  $("export-columns-field").hidden = kind !== "data";
+
+  $("export-scope-field").hidden = kind !== "data";
+
+  $("export-csv-options").hidden = !isCSV;
+
+  $("export-info").textContent = dataset
+    ? `出力対象：${dataset.name}`
+    : "データを読み込んでください。";
+}
+
+// 分析範囲を取得する
+function exportRange(dataset, scope) {
+  if (scope === "all") {
+    return [0, dataset.rowCount];
+  }
+
+  if (!selections.get(dataset.id).size) {
+    throw new Error("グラフの表示項目を選択してください。");
+  }
+
+  return rangeIndices(dataset.axis.values, chart.view[0], chart.view[1]);
+}
+
+/* ========================================
+   基本統計量の出力
+======================================== */
+
+function statisticsExport(dataset) {
+  const names = [...selections.get(dataset.id)];
+
+  if (!names.length) {
+    throw new Error("分析対象の項目を選択してください。");
+  }
+
+  const scope = $("stats-scope").value;
+
+  const [start, end] = exportRange(dataset, scope);
+
+  const headers = [
+    "column",
+    "scope",
+    "start_index",
+    "end_index_exclusive",
+    "count",
+    "valid_count",
+    "missing_count",
+    "missing_rate",
+    "mean",
+    "median",
+    "min",
+    "max",
+    "range",
+    "variance",
+    "std_dev",
+    "q1",
+    "q3",
+  ];
+
+  const rows = names.map((name) => {
+    const values = manager.getColumn(dataset.id, name).values.slice(start, end);
+
+    const s = summarize(values);
+
+    return [
+      name,
+      scope,
+      start,
+      end,
+      s.count,
+      s.validCount,
+      s.missingCount,
+      s.missingRate,
+      s.mean,
+      s.median,
+      s.min,
+      s.max,
+      s.range,
+      s.variance,
+      s.stdDev,
+      s.q1,
+      s.q3,
+    ];
+  });
+
+  return { headers, rows };
+}
+
+/* ========================================
+   誤差分析結果の出力
+======================================== */
+
+function errorsExport(dataset) {
+  const scope = $("stats-scope").value;
+
+  const [start, end] = exportRange(dataset, scope);
+
+  const measuredName = $("error-measured").value;
+
+  const measured = manager
+    .getColumn(dataset.id, measuredName)
+    .values.slice(start, end);
+
+  const mode = $("reference-mode").value;
+
+  let reference;
+  let referenceLabel;
+
+  if (mode === "constant") {
+    const input = $("reference-value");
+
+    if (input.value.trim() === "" || !Number.isFinite(input.valueAsNumber)) {
+      throw new Error("有効な基準値を入力してください。");
+    }
+
+    reference = input.valueAsNumber;
+    referenceLabel = reference;
+  } else {
+    referenceLabel = $("reference-column").value;
+
+    reference = manager
+      .getColumn(dataset.id, referenceLabel)
+      .values.slice(start, end);
+  }
+
+  const e = compareErrors(measured, reference);
+
+  return {
+    headers: [
+      "measured",
+      "reference_mode",
+      "reference",
+      "scope",
+      "start_index",
+      "end_index_exclusive",
+      "count",
+      "valid_count",
+      "excluded_count",
+      "mean_error",
+      "mae",
+      "mse",
+      "rmse",
+    ],
+
+    rows: [
+      [
+        measuredName,
+        mode,
+        referenceLabel,
+        scope,
+        start,
+        end,
+        e.count,
+        e.validCount,
+        e.excludedCount,
+        e.meanError,
+        e.mae,
+        e.mse,
+        e.rmse,
+      ],
+    ],
+  };
+}
+
+/* ========================================
+   ピーク検出結果の出力
+======================================== */
+
+// 現在のデータセットの検出結果を確認する
+function requirePeakSnapshot(dataset) {
+  if (!peakExportSnapshot || peakExportSnapshot.datasetId !== dataset.id) {
+    throw new Error("先にピーク検出を実行してください。");
+  }
+
+  return peakExportSnapshot;
+}
+
+// 全ピークの出力
+function peaksExport(dataset) {
+  const snapshot = requirePeakSnapshot(dataset);
+
+  const rows = [];
+
+  for (const [name, peaks] of snapshot.results) {
+    for (let i = 0; i < peaks.length; i++) {
+      const p = peaks[i];
+
+      rows.push([
+        name,
+        i + 1,
+        p.direction,
+        p.index,
+        p.x,
+        dataset.axis.unit,
+        p.value,
+        p.prominence,
+        p.segment,
+        snapshot.start,
+        snapshot.end,
+      ]);
+    }
+  }
+
+  return {
+    headers: [
+      "column",
+      "peak_number",
+      "direction",
+      "sample_index",
+      "axis_value",
+      "axis_unit",
+      "value",
+      "prominence",
+      "segment",
+      "start_index",
+      "end_index_exclusive",
+    ],
+
+    rows,
+  };
+}
+
+// ピーク間隔の統計量を出力
+function peakSummaryExport(dataset) {
+  const snapshot = requirePeakSnapshot(dataset);
+
+  return {
+    headers: [
+      "column",
+      "direction",
+      "peak_count",
+      "interval_count",
+      "mean_interval",
+      "std_dev_interval",
+      "interval_unit",
+      "start_index",
+      "end_index_exclusive",
+    ],
+
+    rows: snapshot.summaries.map((s) => [
+      s.name,
+      s.direction,
+      s.count,
+      s.intervalCount,
+      s.mean,
+      s.stdDev,
+      dataset.axis.unit,
+      snapshot.start,
+      snapshot.end,
+    ]),
+  };
+}
+
+/* ========================================
+   相関行列の出力
+======================================== */
+
+function correlationExport(dataset, countsOnly) {
+  if (!correlationResult || correlationResult.datasetId !== dataset.id) {
+    throw new Error("先に相関分析を実行してください。");
+  }
+
+  const { names, matrix } = correlationResult.result;
+
+  // データ列名との重複を回避する
+  const usedNames = new Set(names);
+
+  const rowHeader = uniqueDerivedName("column", usedNames);
+
+  return {
+    headers: [rowHeader, ...names],
+
+    rows: matrix.map((row, i) => [
+      names[i],
+
+      ...row.map((cell) => (countsOnly ? cell.validCount : cell.r)),
+    ]),
+  };
+}
+
+/* ========================================
+   分析条件・加工履歴の出力
+======================================== */
+
+function metadataExport(dataset) {
+  // 横軸の全データではなく設定だけを保存
+  const { values, ...axis } = dataset.axis;
+
+  const selected = [...selections.get(dataset.id)];
+
+  const peak =
+    peakExportSnapshot?.datasetId === dataset.id ? peakExportSnapshot : null;
+
+  const corr =
+    correlationResult?.datasetId === dataset.id ? correlationResult : null;
+
+  const referenceMode = $("reference-mode").value;
+
+  return {
+    application: "TimeSeries Lab",
+
+    schemaVersion: 1,
+
+    exportedAt: new Date().toISOString(),
+
+    dataset: {
+      id: dataset.id,
+
+      name: dataset.name,
+
+      rowCount: dataset.rowCount,
+
+      delimiter: dataset.delimiter,
+
+      axis,
+
+      columns: dataset.columns.map((c) => ({
+        name: c.name,
+
+        type: c.type,
+
+        missingCount: c.missingCount,
+
+        derived: c.derived,
+
+        sourceColumns: c.sourceColumns,
+
+        operation: c.operation,
+      })),
+    },
+
+    display: {
+      selectedColumns: selected,
+
+      mode: $("chart-mode").value,
+
+      scale: $("chart-scale").value,
+
+      range: selected.length ? [...chart.view] : null,
+    },
+
+    analysis: {
+      statistics: {
+        scope: $("stats-scope").value,
+
+        variance: "population",
+
+        quantileMethod: "R7",
+      },
+
+      error: {
+        measured: $("error-measured").value,
+
+        referenceMode,
+
+        reference:
+          referenceMode === "constant"
+            ? Number.isFinite($("reference-value").valueAsNumber)
+              ? $("reference-value").valueAsNumber
+              : null
+            : $("reference-column").value,
+      },
+
+      peaks: peak
+        ? {
+            scope: peak.scope,
+
+            startIndex: peak.start,
+
+            endIndexExclusive: peak.end,
+
+            rangeLabel: peak.rangeLabel,
+
+            settings: peak.settings,
+
+            summaries: peak.summaries,
+          }
+        : null,
+
+      correlation: corr
+        ? {
+            method: corr.method,
+
+            scope: corr.scope,
+
+            startIndex: corr.start,
+
+            endIndexExclusive: corr.end,
+
+            columns: corr.result.names,
+
+            matrix: corr.result.matrix,
+          }
+        : null,
+    },
+  };
+}
+
+/* ========================================
+   ファイル出力の実行
+======================================== */
+
+async function runExport() {
+  const dataset = current();
+
+  if (!dataset) return;
+
+  const button = $("export-run");
+
+  button.disabled = true;
+
+  try {
+    const kind = $("export-kind").value;
+
+    let blob;
+    let filename;
+
+    /* PNG出力 */
+
+    if (kind === "png") {
+      // 現在の表示内容を確実に反映する
+      chart.cursor = null;
+
+      for (const panel of chart.panels) {
+        chart.draw(panel);
+      }
+
+      blob = await chartPNG(chart.panels);
+
+      filename = outputFilename(dataset.name, "chart", "png");
+
+      /* JSON出力 */
+    } else if (kind === "json") {
+      const metadata = metadataExport(dataset);
+
+      blob = new Blob(
+        [JSON.stringify(metadata, null, 2)],
+
+        {
+          type: "application/json;charset=utf-8",
+        },
+      );
+
+      filename = outputFilename(dataset.name, "metadata", "json");
+
+      /* CSV出力 */
+    } else {
+      let result;
+      let suffix = kind;
+
+      switch (kind) {
+        case "data": {
+          const columnMode = $("export-columns").value;
+
+          const scope = $("export-scope").value;
+
+          const names =
+            columnMode === "all"
+              ? dataset.columns.map((c) => c.name)
+              : [...selections.get(dataset.id)];
+
+          if (!names.length) {
+            throw new Error("出力する項目を選択してください。");
+          }
+
+          const [start, end] = exportRange(dataset, scope);
+
+          result = datasetRows(dataset, names, start, end);
+
+          suffix = `data_${columnMode}_${scope}`;
+
+          break;
+        }
+
+        case "statistics":
+          result = statisticsExport(dataset);
+
+          break;
+
+        case "errors":
+          result = errorsExport(dataset);
+
+          break;
+
+        case "peaks":
+          result = peaksExport(dataset);
+
+          break;
+
+        case "peak-summary":
+          result = peakSummaryExport(dataset);
+
+          break;
+
+        case "correlation":
+          result = correlationExport(dataset, false);
+
+          suffix = `correlation_${correlationResult.method}`;
+
+          break;
+
+        case "correlation-count":
+          result = correlationExport(dataset, true);
+
+          break;
+
+        default:
+          throw new Error("未対応の出力形式です。");
+      }
+
+      // CSV文字列を生成する
+      const csv = toCSV(
+        result.headers,
+
+        result.rows,
+
+        {
+          bom: $("export-bom").checked,
+
+          safeText: $("export-safe").checked,
+        },
+      );
+
+      blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+
+      filename = outputFilename(dataset.name, suffix, "csv");
+    }
+
+    // ファイルの保存を開始する
+    downloadBlob(blob, filename);
+
+    $("export-info").textContent = `${filename} の保存を開始しました。`;
+
+    status(`ファイル出力：${filename}`);
+  } catch (error) {
+    $("export-info").textContent = error.message;
+
+    status(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 /**
  * 選択された項目のグラフを表示する
  */
@@ -2379,6 +3001,8 @@ function renderSelection() {
   refreshPeakControls();
 
   refreshCorrelationControls();
+
+  refreshExportControls();
 }
 
 /* ========================================
@@ -2971,5 +3595,15 @@ addGeneratorRow({
 
   noise: 0.1,
 });
+
+/* ========================================
+   ファイル出力の操作イベント
+======================================== */
+
+// 出力形式の変更
+$("export-kind").addEventListener("change", refreshExportControls);
+
+// ファイル出力
+$("export-run").addEventListener("click", runExport);
 
 render();

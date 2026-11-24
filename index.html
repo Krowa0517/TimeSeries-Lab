@@ -189,6 +189,92 @@
           </div>
         </section>
 
+        <!-- データ・分析結果の出力 -->
+        <section class="panel">
+          <details>
+            <summary>データ・分析結果の出力</summary>
+
+            <fieldset id="export-settings" disabled>
+              <div class="analysis-controls">
+                <div class="analysis-field">
+                  <label for="export-kind"> 出力対象 </label>
+
+                  <select id="export-kind">
+                    <option value="data">元データ・加工データ（CSV）</option>
+
+                    <option value="statistics">基本統計量（CSV）</option>
+
+                    <option value="errors">誤差分析結果（CSV）</option>
+
+                    <option value="peaks">ピーク検出結果（CSV）</option>
+
+                    <option value="peak-summary">
+                      ピーク間隔の統計量（CSV）
+                    </option>
+
+                    <option value="correlation">相関行列（CSV）</option>
+
+                    <option value="correlation-count">
+                      相関分析の有効データ数（CSV）
+                    </option>
+
+                    <option value="png">時系列グラフ（PNG）</option>
+
+                    <option value="json">分析条件・加工履歴（JSON）</option>
+                  </select>
+                </div>
+
+                <div id="export-columns-field" class="analysis-field">
+                  <label for="export-columns"> 出力項目 </label>
+
+                  <select id="export-columns">
+                    <option value="all">すべての列</option>
+
+                    <option value="selected">選択中の列</option>
+                  </select>
+                </div>
+
+                <div id="export-scope-field" class="analysis-field">
+                  <label for="export-scope"> 出力範囲 </label>
+
+                  <select id="export-scope">
+                    <option value="all">全区間</option>
+
+                    <option value="visible">グラフの表示区間</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- CSVの出力設定 -->
+              <div id="export-csv-options">
+                <label class="generator-reference">
+                  <input id="export-bom" type="checkbox" checked />
+
+                  UTF-8 BOMを付加する
+                </label>
+
+                <label class="generator-reference">
+                  <input id="export-safe" type="checkbox" checked />
+
+                  数式として解釈され得る文字列を安全化する
+                </label>
+              </div>
+
+              <button id="export-run" type="button">ファイルを保存</button>
+            </fieldset>
+
+            <p id="export-info" class="analysis-note">
+              データを読み込んでください。
+            </p>
+
+            <p class="analysis-note">
+              基本統計量・誤差分析には現在の分析範囲を使用します。
+              ピーク検出・相関分析には実行済みの結果を使用します。
+              データは外部サーバーへ送信されません。
+            </p>
+          </details>
+        </section>
+
         <!-- 人工データ生成 -->
         <section class="panel">
           <details class="generator-panel">
