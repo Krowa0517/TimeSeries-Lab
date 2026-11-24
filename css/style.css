@@ -1,19 +1,541 @@
+
+/* ========================================
+   基本設定・テーマ
+======================================== */
+
 :root {
-  font-family: system-ui, sans-serif;
-  color: #203044;
-  background: #f4f6f9;
-  line-height: 1.65;
+
+  color-scheme: dark;
+
+  --bg: #111821;
+  --panel: #1b2634;
+  --control: #253346;
+  --border: #3b4c61;
+
+  --text: #e7edf5;
+  --muted: #aab9ca;
+
+  --accent: #88baf0;
+  --error: #ffb3b3;
+
+  font-family:
+    system-ui,
+    "Yu Gothic UI",
+    sans-serif;
 }
-* { box-sizing: border-box; }
-body { margin: 0; }
-.container { width: min(100% - 2rem, 1000px); margin-inline: auto; }
-.header { background: #20364d; color: #fff; padding-block: 1.75rem; }
-h1 { margin: 0; font-size: 1.8rem; }
-.header p { margin: .35rem 0 0; color: #dce6ef; }
-main { padding-block: 1.5rem; }
-.panel { background: #fff; border: 1px solid #dce2e9; border-radius: 10px; padding: 1.4rem; margin-bottom: 1rem; }
-h2 { margin-top: 0; font-size: 1.25rem; }
-.eyebrow { color: #637489; font-size: .8rem; letter-spacing: .08em; }
-.muted { color: #637489; }
-#status[data-ready="true"] { color: #21634e; font-weight: 600; }
-a { color: #205d9a; }
+
+
+* {
+  box-sizing: border-box;
+}
+
+
+body {
+
+  margin: 0;
+
+  background: var(--bg);
+  color: var(--text);
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+
+h1 {
+  font-size: 25px;
+}
+
+
+h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+
+
+/* ========================================
+   ヘッダー
+======================================== */
+
+.app-header {
+
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 20px 28px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+
+.app-header p,
+.version,
+.muted,
+footer {
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+
+
+/* ========================================
+   メインレイアウト
+======================================== */
+
+.workspace {
+
+  display: grid;
+
+  grid-template-columns:
+    300px minmax(0, 1fr);
+
+  gap: 20px;
+
+  padding: 20px;
+
+  max-width: 1600px;
+
+  margin: auto;
+
+  align-items: start;
+}
+
+
+.sidebar,
+.content {
+
+  display: grid;
+
+  gap: 16px;
+
+  min-width: 0;
+}
+
+
+.panel,
+.metric {
+
+  min-width: 0;
+
+  background: var(--panel);
+
+  border: 1px solid var(--border);
+
+  border-radius: 10px;
+
+  padding: 16px;
+}
+
+
+
+/* ========================================
+   入力フォーム・ボタン
+======================================== */
+
+.sidebar label {
+
+  display: block;
+
+  margin: 10px 0 4px;
+
+  color: var(--muted);
+}
+
+
+button,
+select,
+input {
+
+  font: inherit;
+}
+
+
+button,
+select {
+
+  border-radius: 6px;
+
+  border: 1px solid var(--border);
+
+  padding: 8px 10px;
+
+  width: 100%;
+}
+
+
+select {
+
+  background: var(--control);
+
+  color: var(--text);
+}
+
+
+button {
+
+  background: var(--accent);
+
+  color: #112235;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  margin-top: 10px;
+}
+
+
+button.secondary {
+
+  background: var(--control);
+
+  color: var(--text);
+}
+
+
+button:hover:not(:disabled) {
+
+  filter: brightness(1.12);
+}
+
+
+button:disabled,
+select:disabled {
+
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
+
+:focus-visible {
+
+  outline: 2px solid var(--accent);
+
+  outline-offset: 3px;
+}
+
+
+#file-input {
+
+  width: 100%;
+
+  max-width: 100%;
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+
+#file-input::file-selector-button {
+
+  background: var(--control);
+
+  color: var(--text);
+
+  padding: 7px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 5px;
+
+  cursor: pointer;
+}
+
+
+fieldset {
+
+  padding: 0;
+
+  margin: 0;
+
+  border: 0;
+
+  min-width: 0;
+}
+
+
+#axis-summary {
+
+  margin-top: 10px;
+}
+
+
+.button-row {
+
+  display: flex;
+
+  gap: 8px;
+}
+
+
+
+/* ========================================
+   表示項目一覧
+======================================== */
+
+.column-list {
+
+  max-height: 320px;
+
+  overflow: auto;
+
+  margin-top: 8px;
+}
+
+
+.column-list label {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 8px;
+
+  margin: 0;
+
+  padding: 6px 2px;
+
+  color: var(--text);
+
+  overflow-wrap: anywhere;
+}
+
+
+.column-list input {
+
+  accent-color: var(--accent);
+
+  flex-shrink: 0;
+
+  margin-top: 5px;
+}
+
+
+
+/* ========================================
+   状態表示
+======================================== */
+
+.status {
+
+  padding: 10px 14px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 7px;
+
+  overflow-wrap: anywhere;
+
+  white-space: pre-wrap;
+}
+
+
+.status.error {
+
+  color: var(--error);
+
+  border-color: #ab6666;
+}
+
+
+
+/* ========================================
+   データ概要
+======================================== */
+
+.metrics {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+
+.metric span {
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+
+.metric strong {
+
+  display: block;
+
+  font-size: clamp(18px, 3vw, 28px);
+
+  font-variant-numeric: tabular-nums;
+
+  overflow-wrap: anywhere;
+}
+
+
+.section-heading {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: baseline;
+
+  gap: 12px;
+
+  flex-wrap: wrap;
+}
+
+
+
+/* ========================================
+   グラフ描画領域
+======================================== */
+
+.chart-area {
+
+  min-height: 320px;
+
+  display: grid;
+
+  place-items: center;
+
+  background: var(--bg);
+
+  border: 1px dashed var(--border);
+
+  border-radius: 7px;
+
+  padding: 20px;
+
+  text-align: center;
+
+  color: var(--muted);
+
+  overflow-wrap: anywhere;
+}
+
+
+
+/* ========================================
+   データプレビュー
+======================================== */
+
+.table-scroll {
+
+  overflow: auto;
+
+  max-height: 360px;
+}
+
+
+table {
+
+  border-collapse: collapse;
+
+  width: 100%;
+
+  font-variant-numeric: tabular-nums;
+}
+
+
+th,
+td {
+
+  text-align: left;
+
+  border-bottom: 1px solid var(--border);
+
+  padding: 8px 12px;
+
+  white-space: nowrap;
+}
+
+
+th {
+
+  background: var(--control);
+
+  position: sticky;
+
+  top: 0;
+}
+
+
+td.number {
+
+  text-align: right;
+}
+
+
+td.missing {
+
+  color: var(--muted);
+}
+
+
+
+/* ========================================
+   フッター
+======================================== */
+
+footer {
+
+  text-align: center;
+
+  padding: 20px;
+}
+
+
+
+/* ========================================
+   レスポンシブデザイン
+======================================== */
+
+@media (max-width: 780px) {
+
+  .workspace {
+
+    grid-template-columns: 1fr;
+
+    padding: 12px;
+  }
+
+
+  .app-header {
+
+    padding: 15px;
+  }
+
+
+  .chart-area {
+
+    min-height: 220px;
+  }
+}
+
+
+@media (max-width: 420px) {
+
+  .metrics {
+
+    grid-template-columns: 1fr;
+  }
+}

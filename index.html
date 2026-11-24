@@ -1,31 +1,281 @@
+
 <!doctype html>
 <html lang="ja">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>TimeSeries Lab</title>
+
   <link rel="stylesheet" href="./css/style.css">
 </head>
+
 <body>
-  <header class="header">
-    <div class="container">
+
+  <!-- ヘッダー -->
+  <header class="app-header">
+    <div>
       <h1>TimeSeries Lab</h1>
-      <p>複数の時系列データをブラウザ上で可視化・加工・分析するツール</p>
+      <p>複数の時系列データを可視化・加工・分析</p>
     </div>
+
+    <span class="version">v0.1.0-dev</span>
   </header>
-  <main class="container">
-    <section class="panel" aria-labelledby="status-title">
-      <p class="eyebrow">PROJECT SETUP / v0.0.1</p>
-      <h2 id="status-title">開発環境の動作確認</h2>
-      <p id="status" role="status">JavaScriptの読み込みを確認しています。</p>
-      <p class="muted">このページは開発開始用です。CSV読み込み・分析機能は未実装です。</p>
+
+
+  <!-- メイン画面 -->
+  <main class="workspace">
+
+    <!-- 左側：操作パネル -->
+    <aside class="sidebar" aria-label="データと表示設定">
+
+      <!-- データセット管理 -->
+      <section class="panel">
+
+        <h2>データセット</h2>
+
+        <label for="delimiter">区切り文字</label>
+
+        <select id="delimiter">
+          <option value="auto">自動判定</option>
+          <option value="comma">カンマ</option>
+          <option value="tab">タブ</option>
+          <option value="semicolon">セミコロン</option>
+        </select>
+
+
+        <label for="encoding">文字コード</label>
+
+        <select id="encoding">
+          <option value="utf-8">UTF-8</option>
+          <option value="shift_jis">Shift-JIS</option>
+        </select>
+
+
+        <label class="upload" for="file-input">
+          CSV / TSV ファイルを選択（複数可）
+        </label>
+
+        <input
+          id="file-input"
+          type="file"
+          accept=".csv,.tsv,.txt"
+          multiple
+        >
+
+
+        <button id="sample-button" type="button">
+          サンプルを読み込む
+        </button>
+
+
+        <label for="dataset-select">
+          現在のデータセット
+        </label>
+
+        <select id="dataset-select" disabled>
+        </select>
+
+
+        <button
+          id="remove-button"
+          type="button"
+          class="secondary"
+          disabled
+        >
+          選択中のデータを削除
+        </button>
+
+      </section>
+
+
+      <!-- 横軸設定 -->
+      <section class="panel">
+
+        <h2>横軸設定</h2>
+
+        <fieldset id="axis-settings" disabled>
+
+          <label for="axis-kind">
+            横軸の形式
+          </label>
+
+          <select id="axis-kind">
+            <option value="index">サンプル番号</option>
+            <option value="numeric">数値列</option>
+            <option value="datetime">日付・日時（ISO）</option>
+            <option value="clock">時刻（HH:mm:ss）</option>
+          </select>
+
+
+          <label for="axis-column">
+            対象列
+          </label>
+
+          <select id="axis-column" disabled>
+          </select>
+
+
+          <label for="axis-unit">
+            入力単位（数値列のみ）
+          </label>
+
+          <select id="axis-unit" disabled>
+            <option value="raw">変換なし</option>
+            <option value="s">秒</option>
+            <option value="ms">ミリ秒</option>
+            <option value="us">マイクロ秒</option>
+            <option value="min">分</option>
+            <option value="h">時間</option>
+          </select>
+
+
+          <button id="apply-axis" type="button">
+            横軸を適用
+          </button>
+
+        </fieldset>
+
+        <p id="axis-summary" class="muted">
+          未設定
+        </p>
+
+      </section>
+
+
+      <!-- 表示項目設定 -->
+      <section class="panel">
+
+        <h2>表示項目</h2>
+
+        <div class="button-row">
+
+          <button
+            id="select-all"
+            type="button"
+            class="secondary"
+            disabled
+          >
+            全選択
+          </button>
+
+          <button
+            id="select-none"
+            type="button"
+            class="secondary"
+            disabled
+          >
+            解除
+          </button>
+
+        </div>
+
+        <div id="column-list" class="column-list">
+        </div>
+
+      </section>
+
+    </aside>
+
+
+    <!-- 右側：分析結果 -->
+    <section class="content" aria-label="分析結果">
+
+      <!-- 状態表示 -->
+      <p id="status" class="status" role="status">
+        CSVファイルを読み込んでください。
+      </p>
+
+
+      <!-- データの概要 -->
+      <div class="metrics">
+
+        <div class="metric">
+          <span>行数</span>
+          <strong id="row-count">—</strong>
+        </div>
+
+        <div class="metric">
+          <span>列数</span>
+          <strong id="column-count">—</strong>
+        </div>
+
+        <div class="metric">
+          <span>欠損セル数</span>
+          <strong id="missing-count">—</strong>
+        </div>
+
+      </div>
+
+
+      <!-- グラフ描画領域 -->
+      <section class="panel">
+
+        <div class="section-heading">
+
+          <h2>時系列グラフ</h2>
+
+          <span id="selection-count" class="muted">
+            0 項目選択中
+          </span>
+
+        </div>
+
+        <div id="chart-area" class="chart-area">
+
+          <p id="chart-message">
+            グラフ描画機能は次の工程で実装します。
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- データプレビュー -->
+      <section class="panel">
+
+        <div class="section-heading">
+
+          <h2>データプレビュー</h2>
+
+          <span id="preview-info" class="muted">
+            先頭12行まで
+          </span>
+
+        </div>
+
+
+        <div
+          class="table-scroll"
+          tabindex="0"
+          role="region"
+          aria-label="CSVデータプレビュー"
+        >
+
+          <table id="preview-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+
+        </div>
+
+      </section>
+
     </section>
-    <section class="panel" aria-labelledby="sample-title">
-      <h2 id="sample-title">開発用サンプル</h2>
-      <p>架空の温度・湿度・気圧のデータを用意しました。今後のCSV読み込み機能の検証に使用できます。</p>
-      <a href="./samples/environment.csv" download>environment.csv を取得</a>
-    </section>
+
   </main>
+
+
+  <!-- フッター -->
+  <footer>
+    TimeSeries Lab — 読み込んだファイルはブラウザ内で処理します。
+  </footer>
+
+
   <script type="module" src="./js/main.js"></script>
+
 </body>
+
 </html>
