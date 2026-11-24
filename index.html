@@ -222,13 +222,87 @@
 
         </div>
 
-        <div id="chart-area" class="chart-area">
+        
+<!-- グラフ表示設定 -->
+<div class="chart-toolbar">
 
-          <p id="chart-message">
-            グラフ描画機能は次の工程で実装します。
-          </p>
+  <div class="chart-control">
 
-        </div>
+    <label for="chart-mode">
+      表示形式
+    </label>
+
+    <select id="chart-mode">
+
+      <option value="overlay">
+        重ね合わせ表示
+      </option>
+
+      <option value="separate">
+        個別グラフ表示
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <div class="chart-control">
+
+    <label for="chart-scale">
+      縦軸の表示
+    </label>
+
+    <select id="chart-scale">
+
+      <option value="raw">
+        元の値
+      </option>
+
+      <option value="normalized">
+        Min-Max正規化
+      </option>
+
+    </select>
+
+  </div>
+
+
+  <button
+    id="reset-chart"
+    type="button"
+    class="secondary"
+  >
+    表示範囲をリセット
+  </button>
+
+</div>
+
+
+<p class="chart-help">
+
+  ホイール：拡大・縮小 ／
+  ドラッグ：移動 ／
+  カーソル：測定値の確認
+
+</p>
+
+
+<p class="chart-help">
+
+  異なる単位の項目を比較する場合は、
+  個別表示または正規化を推奨します。
+
+</p>
+
+
+<!-- グラフ描画領域 -->
+<div id="chart-area" class="chart-area">
+
+  表示する数値列を選択してください。
+
+</div>
+
 
       </section>
 

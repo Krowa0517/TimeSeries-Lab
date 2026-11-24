@@ -539,3 +539,215 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ========================================
+   グラフ操作パネル
+======================================== */
+
+.chart-toolbar {
+
+  display: flex;
+
+  align-items: flex-end;
+
+  flex-wrap: wrap;
+
+  gap: 12px;
+
+  margin-bottom: 12px;
+}
+
+
+.chart-control {
+
+  flex: 1;
+
+  min-width: 140px;
+}
+
+
+.chart-control label {
+
+  display: block;
+
+  color: var(--muted);
+
+  font-size: 12px;
+
+  margin-bottom: 4px;
+}
+
+
+.chart-toolbar button {
+
+  width: auto;
+
+  margin: 0;
+}
+
+
+.chart-help {
+
+  color: var(--muted);
+
+  font-size: 12px;
+
+  margin-bottom: 8px;
+}
+
+
+
+/* ========================================
+   グラフ描画領域
+======================================== */
+
+.chart-area {
+
+  display: block;
+
+  min-height: 220px;
+
+  background: var(--bg);
+
+  border: 1px solid var(--border);
+
+  border-radius: 7px;
+
+  padding: 12px;
+
+  text-align: left;
+}
+
+
+.plot-panel {
+
+  min-width: 0;
+
+  padding: 8px 0;
+}
+
+
+.plot-panel + .plot-panel {
+
+  border-top: 1px solid var(--border);
+
+  margin-top: 16px;
+
+  padding-top: 16px;
+}
+
+
+
+/* ========================================
+   Canvas
+======================================== */
+
+.plot-canvas {
+
+  display: block;
+
+  width: 100%;
+
+  height: 360px;
+
+  cursor: crosshair;
+
+  touch-action: none;
+
+  user-select: none;
+}
+
+
+.plot-canvas.compact {
+
+  height: 240px;
+}
+
+
+.plot-canvas:active {
+
+  cursor: grabbing;
+}
+
+
+
+/* ========================================
+   グラフの凡例
+======================================== */
+
+.plot-legend {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  justify-content: center;
+
+  gap: 8px 18px;
+
+  font-size: 13px;
+
+  margin-bottom: 10px;
+
+  overflow-wrap: anywhere;
+}
+
+
+
+/* ========================================
+   測定値の表示
+======================================== */
+
+.plot-readout {
+
+  min-height: 48px;
+
+  padding: 8px 12px;
+
+  margin-top: 4px;
+
+  border-radius: 6px;
+
+  background: var(--control);
+
+  color: var(--text);
+
+  font-size: 12px;
+
+  font-variant-numeric: tabular-nums;
+
+  overflow-wrap: anywhere;
+}
+
+
+
+/* ========================================
+   レスポンシブ対応
+======================================== */
+
+@media (max-width: 780px) {
+
+  .plot-canvas {
+
+    height: 280px;
+  }
+
+
+  .plot-canvas.compact {
+
+    height: 200px;
+  }
+
+
+  .chart-toolbar button {
+
+    width: 100%;
+  }
+
+
+  .chart-area {
+
+    padding: 6px;
+  }
+}

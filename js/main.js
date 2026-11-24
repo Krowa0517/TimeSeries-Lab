@@ -1,6 +1,8 @@
 
 import { DatasetManager } from './dataset.js';
 
+import { TimeSeriesChart } from './chart.js';
+
 
 /* ========================================
    アプリケーションの状態管理
@@ -20,6 +22,10 @@ let busy = false;
 
 // HTML要素を取得する補助関数
 const $ = id => document.getElementById(id);
+// グラフ描画オブジェクト
+const chart = new TimeSeriesChart(
+  $('chart-area')
+);
 
 // プレビューする最大行数
 const previewLimit = 12;
@@ -300,32 +306,67 @@ function renderColumns(dataset) {
 }
 
 
-// 現在選択されている項目を表示する
+
+/**
+ * 選択された項目のグラフを表示する
+ */
 function renderSelection() {
 
   const dataset = current();
 
 
   const selected = dataset
+
     ? selections.get(dataset.id)
+
     : new Set();
 
 
+  // 選択項目数を表示する
   $('selection-count').textContent =
 
     `${selected.size} 項目選択中`;
 
 
-  // 次工程でこの部分をグラフ描画に置き換える
-  $('chart-message').textContent =
+  // 選択された項目のX・Yデータを取得する
+  const series = dataset
 
-    selected.size
+    ? [...selected].map(name =>
 
-      ? `選択中：${[...selected].join('、')}` +
-        '（グラフ描画は次工程）'
+        manager.getSeries(
+          dataset.id,
+          name
+        )
 
-      : '表示項目を選択してください。';
+      )
+
+    : [];
+
+
+  // グラフの表示設定を取得する
+  const mode =
+    $('chart-mode').value;
+
+  const normalized =
+
+    $('chart-scale').value ===
+    'normalized';
+
+
+  // グラフを描画する
+  chart.setSeries(
+
+    series,
+
+    {
+
+      mode,
+
+      normalized
+    }
+  );
 }
+
 
 
 
@@ -928,5 +969,45 @@ $('select-none').addEventListener(
 /* ========================================
    初期画面の表示
 ======================================== */
+
+
+/* ========================================
+   グラフ表示設定
+======================================== */
+
+// 重ね合わせ・個別表示の切り替え
+$('chart-mode').addEventListener(
+
+  'change',
+
+  () => {
+
+    renderSelection();
+  }
+);
+
+
+// 元データ・正規化表示の切り替え
+$('chart-scale').addEventListener(
+
+  'change',
+
+  () => {
+
+    renderSelection();
+  }
+);
+
+
+// グラフの表示範囲をリセット
+$('reset-chart').addEventListener(
+
+  'click',
+
+  () => {
+
+    chart.resetView();
+  }
+);
 
 render();
