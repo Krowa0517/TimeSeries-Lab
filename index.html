@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TimeSeries Lab</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <h1>TimeSeries Lab</h1>
+      <p>複数の時系列データをブラウザ上で可視化・加工・分析するツール</p>
+    </div>
+  </header>
+  <main class="container">
+    <section class="panel" aria-labelledby="status-title">
+      <p class="eyebrow">PROJECT SETUP / v0.0.1</p>
+      <h2 id="status-title">開発環境の動作確認</h2>
+      <p id="status" role="status">JavaScriptの読み込みを確認しています。</p>
+      <p class="muted">このページは開発開始用です。CSV読み込み・分析機能は未実装です。</p>
+    </section>
+    <section class="panel" aria-labelledby="sample-title">
+      <h2 id="sample-title">開発用サンプル</h2>
+      <p>架空の温度・湿度・気圧のデータを用意しました。今後のCSV読み込み機能の検証に使用できます。</p>
+      <a href="./samples/environment.csv" download>environment.csv を取得</a>
+    </section>
+  </main>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
