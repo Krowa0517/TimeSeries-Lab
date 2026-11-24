@@ -305,6 +305,163 @@
 
 
       </section>
+      
+      <!-- フィルタ処理 -->
+      <section class="panel">
+
+        <h2>フィルタ処理</h2>
+
+        <fieldset id="filter-settings" disabled>
+
+          <div class="analysis-controls">
+
+            <!-- フィルタの種類 -->
+            <div class="analysis-field">
+
+              <label for="filter-method">
+                フィルタの種類
+              </label>
+
+              <select id="filter-method">
+
+                <option value="sma">
+                  単純移動平均（SMA）
+                </option>
+
+                <option value="median">
+                  中央値フィルタ
+                </option>
+
+                <option value="ema">
+                  指数移動平均（EMA）
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <!-- 窓幅 -->
+            <div
+              id="filter-size-field"
+              class="analysis-field"
+            >
+
+              <label for="filter-size">
+                窓幅（サンプル数）
+              </label>
+
+              <input
+                id="filter-size"
+                type="number"
+                min="1"
+                step="1"
+                value="5"
+              >
+
+            </div>
+
+
+            <!-- 処理方向 -->
+            <div
+              id="filter-direction-field"
+              class="analysis-field"
+            >
+
+              <label for="filter-direction">
+                処理方向
+              </label>
+
+              <select id="filter-direction">
+
+                <option value="center">
+                  中央
+                </option>
+
+                <option value="trailing">
+                  後方
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <!-- EMAの平滑化係数 -->
+            <div
+              id="filter-alpha-field"
+              class="analysis-field"
+              hidden
+            >
+
+              <label for="filter-alpha">
+                平滑化係数 α
+              </label>
+
+              <input
+                id="filter-alpha"
+                type="number"
+                min="0.001"
+                max="1"
+                step="any"
+                value="0.25"
+              >
+
+            </div>
+
+          </div>
+
+
+          <!-- フィルタの適用 -->
+          <button
+            id="apply-filter"
+            type="button"
+            disabled
+          >
+            選択中の項目にフィルタを適用
+          </button>
+
+
+          <p id="filter-info" class="analysis-note">
+            データを読み込んでください。
+          </p>
+
+
+          <p class="analysis-note">
+
+            フィルタはデータ列全体に適用します。
+            元データは変更されません。
+            中央フィルタの窓幅には奇数を指定してください。
+
+          </p>
+
+
+          <!-- 加工データの管理 -->
+          <div class="derived-manager">
+
+            <h3>加工データの管理</h3>
+
+            <label for="derived-select">
+              削除する加工データ
+            </label>
+
+            <select id="derived-select" disabled>
+            </select>
+
+            <button
+              id="remove-derived"
+              type="button"
+              class="secondary"
+              disabled
+            >
+              加工データを削除
+            </button>
+
+          </div>
+
+        </fieldset>
+
+      </section>
 
       <!-- 基本統計分析 -->
       <section class="panel">

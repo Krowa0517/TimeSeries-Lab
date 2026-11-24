@@ -1,3 +1,4 @@
+import { applyFilter } from './filters.js';
 
 import { DatasetManager } from './dataset.js';
 
@@ -312,6 +313,20 @@ function renderColumns(dataset) {
       )
     );
 
+    // 加工データの場合は識別ラベルを表示する
+    if (column.derived) {
+
+    const tag =
+        document.createElement('span');
+
+    tag.className = 'derived-tag';
+
+    tag.textContent = '加工';
+
+    tag.title = column.operation ?? '';
+
+    label.append(tag);
+    }
 
     list.append(label);
   }
@@ -808,6 +823,373 @@ function scheduleStatistics() {
   );
 }
 
+
+/* ========================================
+   フィルタ処理
+======================================== */
+
+// フィルタの種類に応じて入力欄を切り替える
+function updateFilterInputs() {
+
+  const method = $('filter-method').value;
+
+  const isEMA = method === 'ema';
+
+
+  $('filter-size-field').hidden = isEMA;
+
+  $('filter-direction-field').hidden = isEMA;
+
+  $('filter-alpha-field').hidden = !isEMA;
+}
+
+
+// フィルタ操作画面を更新する
+function refreshFilterControls() {
+
+  const dataset = current();
+
+
+  const selected = dataset
+
+    ? selections.get(dataset.id)
+
+    : new Set();
+
+
+  const derived = dataset
+
+    ? dataset.columns.filter(c => c.derived)
+
+    : [];
+
+
+  $('filter-settings').disabled = !dataset;
+
+  $('apply-filter').disabled =
+    selected.size === 0;
+
+
+  // 加工データの選択肢を更新する
+  const select = $('derived-select');
+
+  const previous = select.value;
+
+
+  select.replaceChildren(
+
+    ...derived.map(
+      c => option(c.name, c.name)
+    )
+  );
+
+
+  // 以前の選択状態を可能な限り維持する
+  if (
+
+    derived.some(c => c.name === previous)
+
+  ) {
+
+    select.value = previous;
+  }
+
+
+  if (!derived.length) {
+
+    select.append(
+      option('', '加工データなし')
+    );
+  }
+
+
+  select.disabled = !derived.length;
+
+  $('remove-derived').disabled =
+    !derived.length;
+
+
+  $('filter-info').textContent =
+
+    dataset
+
+      ? `${selected.size} 項目選択中 / ` +
+        `加工データ ${derived.length} 列`
+
+      : 'データを読み込んでください。';
+
+
+  updateFilterInputs();
+}
+
+
+// 重複しない加工データの列名を生成する
+function uniqueDerivedName(base, usedNames) {
+
+  let name = base;
+
+  let index = 2;
+
+
+  while (usedNames.has(name)) {
+
+    name = `${base}_${index}`;
+
+    index++;
+  }
+
+
+  usedNames.add(name);
+
+  return name;
+}
+
+
+// 選択されている項目にフィルタを適用する
+function applySelectedFilters() {
+
+  const dataset = current();
+
+  if (!dataset) return;
+
+
+  const selected =
+    selections.get(dataset.id);
+
+
+  if (!selected.size) {
+
+    status(
+      '加工する項目を選択してください。',
+      true
+    );
+
+    return;
+  }
+
+
+  try {
+
+    // フィルタの設定を取得する
+    const method =
+      $('filter-method').value;
+
+    const size =
+      $('filter-size').valueAsNumber;
+
+    const direction =
+      $('filter-direction').value;
+
+    const alpha =
+      $('filter-alpha').valueAsNumber;
+
+
+    // 窓幅を確認する
+    if (
+
+      method !== 'ema' &&
+
+      size > dataset.rowCount
+
+    ) {
+
+      throw new Error(
+        '窓幅がデータ数を超えています。'
+      );
+    }
+
+
+    // 既存の列名を取得する
+    const usedNames = new Set(
+
+      dataset.columns.map(c => c.name)
+    );
+
+
+    // 加工前の選択項目をコピーする
+    const sourceNames = [...selected];
+
+
+    // すべての計算を先に実施する
+    // 計算エラーによる途中登録を防止する
+    const pending = [];
+
+
+    for (const sourceName of sourceNames) {
+
+      const column = manager.getColumn(
+
+        dataset.id,
+
+        sourceName
+      );
+
+
+      // フィルタを適用する
+      const values = applyFilter(
+
+        column.values,
+
+        {
+
+          method,
+
+          size,
+
+          direction,
+
+          alpha
+        }
+      );
+
+
+      // 加工内容が分かる列名を生成する
+      const suffix = method === 'ema'
+
+        ? `EMA_${alpha}`
+
+        : `${method.toUpperCase()}_${size}_${direction}`;
+
+
+      const name = uniqueDerivedName(
+
+        `${sourceName}_${suffix}`,
+
+        usedNames
+      );
+
+
+      // 加工処理の情報を保存する
+      const operation = method === 'ema'
+
+        ? `EMA(alpha=${alpha})`
+
+        : `${method.toUpperCase()}` +
+          `(size=${size}, direction=${direction})`;
+
+
+      pending.push({
+
+        name,
+
+        values,
+
+        sourceName,
+
+        operation
+      });
+    }
+
+
+    // 計算が完了してから加工データを登録する
+    for (const result of pending) {
+
+      manager.addDerivedColumn(
+
+        dataset.id,
+
+        result.name,
+
+        result.values,
+
+        {
+
+          sourceColumns: [
+            result.sourceName
+          ],
+
+          operation: result.operation
+        }
+      );
+
+
+      // 加工結果をグラフの表示項目に追加する
+      selected.add(result.name);
+    }
+
+
+    // 画面を更新する
+    render();
+
+
+    // 有効値が存在しない加工結果を確認する
+    const emptyResults = pending.filter(
+
+      r => r.values.every(v => v === null)
+    );
+
+
+    status(
+
+      `${pending.length} 項目にフィルタを適用しました。` +
+
+      (
+
+        emptyResults.length
+
+          ? `\n${emptyResults.length} 列は` +
+            '有効な計算結果がありません。'
+
+          : ''
+      ),
+
+      emptyResults.length > 0
+    );
+
+  } catch (error) {
+
+    status(
+      error.message,
+      true
+    );
+  }
+}
+
+
+// 加工データを削除する
+function removeSelectedDerived() {
+
+  const dataset = current();
+
+  if (!dataset) return;
+
+
+  const name = $('derived-select').value;
+
+  if (!name) return;
+
+
+  try {
+
+    manager.removeDerivedColumn(
+
+      dataset.id,
+
+      name
+    );
+
+
+    // 表示項目からも削除する
+    selections.get(dataset.id).delete(name);
+
+
+    render();
+
+
+    status(
+      `加工データ「${name}」を削除しました。`
+    );
+
+  } catch (error) {
+
+    status(
+      error.message,
+      true
+    );
+  }
+}
+
+
 /**
  * 選択された項目のグラフを表示する
  */
@@ -869,6 +1251,7 @@ function renderSelection() {
 
   // 統計量も更新する
   renderStatistics();
+  refreshFilterControls();
 }
 
 
@@ -1565,5 +1948,37 @@ $('reference-column').addEventListener(
 
   renderStatistics
 );
+
+
+/* ========================================
+   フィルタ処理の操作イベント
+======================================== */
+
+// フィルタの種類を変更
+$('filter-method').addEventListener(
+
+  'change',
+
+  updateFilterInputs
+);
+
+
+// フィルタを適用する
+$('apply-filter').addEventListener(
+
+  'click',
+
+  applySelectedFilters
+);
+
+
+// 加工データを削除する
+$('remove-derived').addEventListener(
+
+  'click',
+
+  removeSelectedDerived
+);
+
 
 render();

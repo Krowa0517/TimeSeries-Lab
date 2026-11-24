@@ -887,3 +887,68 @@ footer {
     min-width: 100%;
   }
 }
+
+
+/* ========================================
+   フィルタ処理
+======================================== */
+
+#filter-settings {
+
+  min-width: 0;
+}
+
+
+#filter-info {
+
+  min-height: 20px;
+}
+
+
+.derived-manager {
+
+  margin-top: 18px;
+
+  padding-top: 16px;
+
+  border-top: 1px solid var(--border);
+}
+
+
+.derived-manager h3 {
+
+  margin: 0 0 10px;
+
+  font-size: 14px;
+}
+
+
+.derived-manager label {
+
+  display: block;
+
+  margin-bottom: 4px;
+
+  font-size: 12px;
+
+  color: var(--muted);
+}
+
+
+/* 加工データであることを示す */
+.derived-tag {
+
+  display: inline-block;
+
+  padding: 1px 5px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 4px;
+
+  font-size: 10px;
+
+  color: var(--muted);
+
+  white-space: nowrap;
+}
